@@ -125,15 +125,13 @@ def bellman_two_assets(
                 best_j_next = idx_q2_zero
 
                 # Try all feasible next states:
-                # q1 can only decrease (we sell S1): i_next <= i
-                # q2 can only decrease or stay (we sell/short more S2): j_next <= j
+                # q1 can only decrease (we sell S1, no re-buying): i_next <= i
+                # q2 can go in any direction: short (j_next < j) or cover (j_next > j)
                 for i_next in range(i + 1):
-                    for j_next in range(j + 1):
-                        n1 = q1_i - q1_grid[i_next]   # shares of S1 sold
-                        n2 = q2_j - q2_grid[j_next]   # shares of S2 sold (can be negative = buying back short)
+                    for j_next in range(n_q + 1):   # all q2 levels reachable
+                        n1 = q1_i - q1_grid[i_next]   # shares of S1 sold (>= 0)
+                        n2 = q2_j - q2_grid[j_next]   # S2 traded: >0 = shorting, <0 = covering
 
-                        # Only allow selling S2 (going more short or staying flat)
-                        # j_next <= j means q2_grid[j_next] <= q2_grid[j] (more negative or same)
                         v1 = n1 / dt
                         v2 = n2 / dt
 
