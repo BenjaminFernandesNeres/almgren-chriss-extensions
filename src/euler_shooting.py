@@ -20,7 +20,7 @@ Because only q(0) is known (not v(0)), we cannot integrate directly.
 The shooting method searches for the initial selling rate v(0) = v^i such that
 the Euler-integrated solution satisfies q(T) = 0.
 
-Authors: Benjamin Fernandes Neres, Dorian Deilhes, Yesman
+Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
 Date: April 2026
 """
 

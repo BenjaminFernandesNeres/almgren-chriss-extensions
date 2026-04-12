@@ -19,7 +19,7 @@ Mean-variance objective:
   <=>
   minimise  int_0^T [ eta * v_t^2 + lambda * sigma^2 * penalty(q_t) ] dt
 
-Authors: Benjamin Fernandes Neres, Dorian Deilhes, Yesman
+Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
 Date: April 2026
 """
 

@@ -26,7 +26,7 @@ We solve this with Bellman backward induction on a 2D inventory grid (q1, q2).
 
 Note: q2 can be negative (short position in S2 used to hedge S1 risk).
 
-Authors: Benjamin Fernandes Neres, Dorian Deilhes, Yesman
+Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
 Date: April 2026
 """
 

@@ -12,7 +12,7 @@ This is the discrete-time analogue of the continuous mean-variance problem solve
 analytically in almgren_chriss.py.  When the grid is fine enough, the two solutions
 should match — which we verify in the notebook (Section 1, Question 4).
 
-Authors: Benjamin Fernandes Neres, Dorian Deilhes, Yesman
+Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
 Date: April 2026
 """
 
