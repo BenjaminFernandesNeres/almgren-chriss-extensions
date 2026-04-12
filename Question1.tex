@@ -1,0 +1,583 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsfonts,mathtools}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{bm}
+\usepackage{hyperref}
+
+\title{Continuous-Time Almgren--Chriss Model:\\
+Implementation Shortfall, Target Close, and TWAP\\
+(Static Mean--Variance Strategies, No Permanent Impact)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Model Setup}
+
+We consider the liquidation of an initial position of \(Q>0\) shares over a fixed horizon \([0,T]\).
+Let
+\begin{itemize}
+  \item \(q_t\): inventory (shares held) at time \(t\),
+  \item \(v_t\): trading speed at time \(t\), defined by
+  \[
+    v_t = -\dot q_t,
+  \]
+  so that \(v_t \ge 0\) corresponds to selling,
+  \item boundary conditions:
+  \[
+    q_0 = Q, \qquad q_T = 0,
+  \]
+  \item unaffected mid-price (no permanent impact)
+  \[
+    dS_t = \sigma\, dW_t,
+  \]
+  where \(\sigma>0\) is the volatility and \(W_t\) a standard Brownian motion.
+\end{itemize}
+
+Temporary impact is assumed linear:
+the execution price at time \(t\) is
+\[
+  \tilde S_t = S_t - \eta v_t,
+\]
+where \(\eta>0\) is the temporary impact parameter.
+
+Selling at rate \(v_t\) over \(dt\) generates cash
+\[
+  dX_t = \tilde S_t\, v_t\, dt = (S_t - \eta v_t)\, v_t\, dt.
+\]
+The total cash from liquidation is
+\[
+  X_T = \int_0^T (S_t - \eta v_t)\, v_t\, dt.
+\]
+
+We adopt a mean--variance criterion:
+for a given risk aversion parameter \(\lambda>0\), we minimize
+\[
+  J = \mathbb E[\Pi] + \lambda \, \mathrm{Var}(\Pi),
+\]
+where \(\Pi\) denotes a suitably defined cost or shortfall relative to the chosen benchmark. 
+We restrict to static (deterministic) strategies, so \(q_t\) and \(v_t\) are deterministic functions of time.
+
+Throughout, we use the identity
+\[
+  \int_0^T v_t\, dt = Q
+\]
+from the inventory boundary conditions.
+
+\section{Implementation Shortfall (IS) Benchmark}
+
+\subsection{Definition of the Objective}
+
+For an Implementation Shortfall (IS) order, the benchmark is the initial price \(S_0\).
+The implementation shortfall cost is
+\[
+  \mathrm{IS} = Q S_0 - X_T.
+\]
+Minimizing \(\mathrm{IS}\) is equivalent, up to a sign and constants, to maximizing \(X_T\), or equivalently minimizing
+\[
+  J_{\mathrm{IS}} = -\mathbb E[X_T] + \lambda\, \mathrm{Var}(X_T).
+\]
+
+\subsection{Expectation of the Cash Flow}
+
+We have
+\begin{align*}
+  X_T 
+  &= \int_0^T (S_t - \eta v_t)\, v_t\, dt \\
+  &= \int_0^T S_t v_t\, dt - \eta \int_0^T v_t^2\, dt.
+\end{align*}
+Since \(S_t\) follows
+\[
+  S_t = S_0 + \sigma W_t,
+\]
+and \(v_t\) is deterministic, we obtain
+\begin{align*}
+  \mathbb E\Big[\int_0^T S_t v_t\, dt\Big]
+  &= \int_0^T \mathbb E[S_t] v_t\, dt
+   = \int_0^T S_0 v_t\, dt
+   = S_0 \int_0^T v_t\, dt
+   = S_0 Q.
+\end{align*}
+Hence
+\[
+  \mathbb E[X_T] = S_0 Q - \eta \int_0^T v_t^2\, dt,
+\]
+and so
+\[
+  -\mathbb E[X_T] = -S_0 Q + \eta \int_0^T v_t^2\, dt.
+\]
+The constant term \(-S_0 Q\) can be dropped from the optimization.
+
+\subsection{Variance of the Cash Flow}
+
+Using the decomposition \(S_t = S_0 + \sigma W_t\), we can write
+\[
+  X_T = S_0 Q - \eta \int_0^T v_t^2\, dt
+        + \sigma \int_0^T W_t v_t\, dt.
+\]
+Constant terms do not contribute to the variance, so
+\[
+  \mathrm{Var}(X_T)
+  = \sigma^2 \,\mathrm{Var}\Big(\int_0^T W_t v_t\, dt\Big).
+\]
+
+For deterministic \(v_t\), in the continuous-time limit of Almgren--Chriss we can write
+\[
+  \mathrm{Var}(X_T) 
+  = \sigma^2 \int_0^T q_t^2\, dt,
+\]
+where
+\[
+  q_t = Q - \int_0^t v_s\, ds
+\]
+is the inventory process.
+
+\subsection{Variational Formulation}
+
+We now express the objective function solely in terms of the inventory \(q_t\). Using \(v_t = -\dot q_t\), we have
+\[
+  v_t^2 = \dot q_t^{\,2}.
+\]
+Up to an additive constant, the objective for IS is
+\[
+  J_{\mathrm{IS}}[q] 
+    = \eta \int_0^T \dot q_t^{\,2}\, dt
+      + \lambda \sigma^2 \int_0^T q_t^2\, dt,
+\]
+subject to the boundary conditions
+\[
+  q_0 = Q, \qquad q_T = 0.
+\]
+
+Define the Lagrangian
+\[
+  \mathcal L(q,\dot q,t) 
+  = \eta \dot q^{\,2} + \lambda \sigma^2 q^{2}.
+\]
+
+\subsection{Euler--Lagrange Equation}
+
+The Euler--Lagrange equation is
+\[
+  \frac{d}{dt}\left(\frac{\partial \mathcal L}{\partial \dot q}\right)
+  - \frac{\partial \mathcal L}{\partial q} = 0.
+\]
+We compute
+\[
+  \frac{\partial \mathcal L}{\partial \dot q}
+  = 2\eta \dot q,
+  \qquad
+  \frac{\partial \mathcal L}{\partial q}
+  = 2\lambda \sigma^2 q.
+\]
+Therefore
+\begin{align*}
+  \frac{d}{dt}(2\eta \dot q) - 2\lambda \sigma^2 q &= 0,\\
+  2\eta \ddot q - 2\lambda \sigma^2 q &= 0.
+\end{align*}
+Dividing by \(2\eta>0\), we obtain the linear ODE
+\[
+  \ddot q - \kappa^2 q = 0,
+  \qquad
+  \kappa^2 := \frac{\lambda\sigma^2}{\eta}.
+\]
+
+\subsection{Solution and Boundary Conditions}
+
+The general solution of \(\ddot q - \kappa^2 q = 0\) is
+\[
+  q(t) = A e^{\kappa t} + B e^{-\kappa t},
+\]
+or equivalently in terms of hyperbolic functions,
+\[
+  q(t) = C_1 \cosh(\kappa t) + C_2 \sinh(\kappa t).
+\]
+
+Applying the boundary condition at \(t=0\),
+\[
+  q(0) = C_1 = Q,
+\]
+so \(C_1 = Q\).
+At \(t=T\), we require
+\[
+  q(T) = Q\cosh(\kappa T) + C_2\sinh(\kappa T) = 0.
+\]
+Thus
+\[
+  C_2 = -Q \frac{\cosh(\kappa T)}{\sinh(\kappa T)} = -Q \coth(\kappa T).
+\]
+
+Therefore
+\[
+  q(t) = Q \cosh(\kappa t) - Q \coth(\kappa T)\, \sinh(\kappa t).
+\]
+
+Using the identity
+\[
+  \sinh(\kappa (T-t)) = \sinh(\kappa T)\cosh(\kappa t) - \cosh(\kappa T)\sinh(\kappa t),
+\]
+we rewrite \(q(t)\) as
+\[
+  q(t) = Q \frac{\sinh(\kappa (T - t))}{\sinh(\kappa T)}.
+\]
+
+This is the continuous-time Almgren--Chriss optimal IS schedule:
+\begin{equation}
+  \boxed{
+    q_{\mathrm{IS}}(t)
+    = Q \frac{\sinh\big(\kappa (T - t)\big)}{\sinh(\kappa T)},
+    \qquad
+    \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+  }
+\end{equation}
+The corresponding trading speed is
+\[
+  v_{\mathrm{IS}}(t) = -\dot q_{\mathrm{IS}}(t)
+  = Q\,\frac{\kappa \cosh\big(\kappa (T - t)\big)}{\sinh(\kappa T)}.
+\]
+
+\section{Target Close (TC) Benchmark}
+
+\subsection{Definition of the Objective}
+
+For a Target Close (TC) order, the benchmark is the terminal price \(S_T\).
+We consider the payoff
+\[
+  \Pi_{\mathrm{TC}} = X_T - Q S_T,
+\]
+and work with the mean--variance objective
+\[
+  J_{\mathrm{TC}} = -\mathbb E[\Pi_{\mathrm{TC}}] + \lambda\,\mathrm{Var}(\Pi_{\mathrm{TC}}).
+\]
+
+There is no permanent impact, so \(S_T\) remains
+\[
+  S_T = S_0 + \sigma W_T.
+\]
+
+\subsection{Expressing \(\Pi_{\mathrm{TC}}\)}
+
+We start from
+\[
+  X_T = \int_0^T (S_t - \eta v_t) v_t\, dt,
+\]
+so
+\begin{align*}
+  \Pi_{\mathrm{TC}}
+  &= X_T - Q S_T \\
+  &= \int_0^T (S_t - \eta v_t)\, v_t\, dt - Q S_T.
+\end{align*}
+Expand \(S_t = S_0 + \sigma W_t\) and \(S_T = S_0 + \sigma W_T\):
+\begin{align*}
+  \Pi_{\mathrm{TC}}
+  &= \int_0^T S_0 v_t\, dt + \sigma \int_0^T W_t v_t\, dt
+        - \eta \int_0^T v_t^2\, dt
+        - Q(S_0 + \sigma W_T).
+\end{align*}
+Since \(\int_0^T v_t\, dt = Q\), the \(S_0\) terms cancel:
+\[
+  \int_0^T S_0 v_t\, dt - Q S_0 = 0.
+\]
+Therefore
+\[
+  \Pi_{\mathrm{TC}}
+  = \sigma \int_0^T W_t v_t\, dt
+    - \eta \int_0^T v_t^2\, dt
+    - Q \sigma W_T.
+\]
+
+\subsection{Mean and Variance}
+
+\paragraph{Mean.}
+Using \(\mathbb E[W_t] = 0\), we obtain
+\[
+  \mathbb E[\Pi_{\mathrm{TC}}] = -\eta \int_0^T v_t^2\, dt,
+\]
+hence
+\[
+  -\mathbb E[\Pi_{\mathrm{TC}}] = \eta \int_0^T v_t^2\, dt.
+\]
+
+\paragraph{Variance.}
+The variance is
+\[
+  \mathrm{Var}(\Pi_{\mathrm{TC}})
+  = \sigma^2 \,\mathrm{Var}\left(\int_0^T W_t v_t\, dt - Q W_T\right).
+\]
+In the continuous-time limit of the discrete AC model for TC, this variance term can be written as
+\[
+  \mathrm{Var}(\Pi_{\mathrm{TC}})
+  = \sigma^2 \int_0^T (q_t - Q)^2 \, dt,
+\]
+where
+\[
+  q_t = Q - \int_0^t v_s\, ds.
+\]
+For IS, risk is driven by \(q_t\), whereas for TC it is driven by the deviation from the total inventory \(Q\), giving \((q_t - Q)^2\).
+
+\subsection{Variational Formulation}
+
+Using \(v_t = -\dot q_t\), the TC objective (up to a constant) becomes
+\[
+  J_{\mathrm{TC}}[q]
+  = \eta \int_0^T \dot q_t^{\,2}\, dt
+    + \lambda \sigma^2 \int_0^T (q_t - Q)^2\, dt,
+\]
+subject to
+\[
+  q_0 = Q,\qquad q_T = 0.
+\]
+
+The Lagrangian is
+\[
+  \mathcal L_{\mathrm{TC}}(q,\dot q,t)
+  = \eta \dot q^{\,2} + \lambda \sigma^2 (q - Q)^{2}.
+\]
+
+\subsection{Euler--Lagrange Equation}
+
+We compute
+\[
+  \frac{\partial \mathcal L_{\mathrm{TC}}}{\partial \dot q}
+  = 2\eta \dot q,
+  \qquad
+  \frac{\partial \mathcal L_{\mathrm{TC}}}{\partial q}
+  = 2\lambda \sigma^2 (q - Q).
+\]
+Thus the Euler--Lagrange equation is
+\begin{align*}
+  \frac{d}{dt}(2\eta \dot q) - 2\lambda \sigma^2 (q - Q) &= 0,\\
+  2\eta \ddot q - 2\lambda \sigma^2 (q - Q) &= 0,
+\end{align*}
+or
+\[
+  \ddot q - \kappa^2 (q - Q) = 0,
+  \qquad
+  \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+\]
+
+Introduce the shifted process
+\[
+  y(t) = q(t) - Q.
+\]
+Then \(y\) satisfies
+\[
+  \ddot y - \kappa^2 y = 0.
+\]
+
+\subsection{Solution and Boundary Conditions}
+
+The general solution for \(y\) is
+\[
+  y(t) = A \cosh(\kappa t) + B \sinh(\kappa t).
+\]
+We now impose the boundary conditions for \(q\):
+\[
+  q_0 = Q \quad\Rightarrow\quad y(0) = q(0) - Q = 0,
+\]
+and
+\[
+  q_T = 0 \quad\Rightarrow\quad y(T) = q(T) - Q = -Q.
+\]
+From \(y(0) = 0\), we obtain
+\[
+  A = 0.
+\]
+From \(y(T) = -Q\), we obtain
+\[
+  B \sinh(\kappa T) = -Q
+  \quad\Rightarrow\quad
+  B = -\frac{Q}{\sinh(\kappa T)}.
+\]
+Therefore
+\[
+  y(t) = -Q \frac{\sinh(\kappa t)}{\sinh(\kappa T)}.
+\]
+Recalling that \(q(t) = Q + y(t)\), we obtain
+\begin{equation}
+  \boxed{
+    q_{\mathrm{TC}}(t)
+    = Q\left(1 - \frac{\sinh(\kappa t)}{\sinh(\kappa T)}\right),
+    \qquad
+    \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+  }
+\end{equation}
+
+\section{TWAP Benchmark}
+
+\subsection{Definition of the Benchmark and Objective}
+
+The Time-Weighted Average Price (TWAP) benchmark is
+\[
+  B_{\mathrm{TWAP}}
+  = \frac{1}{T} \int_0^T S_t\, dt.
+\]
+We consider the payoff
+\[
+  \Pi_{\mathrm{TWAP}} = X_T - Q B_{\mathrm{TWAP}},
+\]
+and the mean--variance objective
+\[
+  J_{\mathrm{TWAP}} = -\mathbb E[\Pi_{\mathrm{TWAP}}] + \lambda\, \mathrm{Var}(\Pi_{\mathrm{TWAP}}).
+\]
+
+\subsection{Expression of \(\Pi_{\mathrm{TWAP}}\)}
+
+We start from
+\[
+  X_T = \int_0^T (S_t - \eta v_t) v_t\, dt,
+\]
+so
+\begin{align*}
+  \Pi_{\mathrm{TWAP}}
+  &= \int_0^T (S_t - \eta v_t) v_t\, dt
+     - \frac{Q}{T} \int_0^T S_t\, dt.
+\end{align*}
+Using \(S_t = S_0 + \sigma W_t\), we have
+\begin{align*}
+  \Pi_{\mathrm{TWAP}}
+  &= \int_0^T S_0 v_t\, dt 
+     + \sigma \int_0^T W_t v_t\, dt
+     - \eta \int_0^T v_t^2\, dt \\
+  &\quad
+     - \frac{Q}{T}\int_0^T (S_0 + \sigma W_t)\, dt.
+\end{align*}
+Again \(\int_0^T v_t\, dt = Q\), so the deterministic \(S_0\) terms cancel:
+\[
+  \int_0^T S_0 v_t\, dt
+   - \frac{Q}{T} \int_0^T S_0\, dt
+  = S_0 Q - S_0 Q = 0.
+\]
+Thus
+\[
+  \Pi_{\mathrm{TWAP}}
+  = \sigma \int_0^T W_t v_t\, dt
+    - \frac{Q\sigma}{T} \int_0^T W_t\, dt
+    - \eta \int_0^T v_t^2\, dt.
+\]
+
+\subsection{Mean and Variance}
+
+\paragraph{Mean.}
+As before, \(\mathbb E[W_t] = 0\) implies
+\[
+  \mathbb E[\Pi_{\mathrm{TWAP}}]
+  = -\eta \int_0^T v_t^2\, dt,
+\]
+so
+\[
+  -\mathbb E[\Pi_{\mathrm{TWAP}}]
+  = \eta \int_0^T v_t^2\, dt.
+\]
+
+\paragraph{Variance.}
+The stochastic part is
+\[
+  \sigma\left(\int_0^T W_t v_t\, dt
+  - \frac{Q}{T}\int_0^T W_t\, dt\right),
+\]
+hence
+\[
+  \mathrm{Var}(\Pi_{\mathrm{TWAP}})
+  = \sigma^2\, \mathrm{Var}\left(\int_0^T W_t v_t\, dt
+  - \frac{Q}{T}\int_0^T W_t\, dt\right).
+\]
+
+In the continuous-time limit of the discrete model, this variance term can be cast as
+\[
+  \mathrm{Var}(\Pi_{\mathrm{TWAP}})
+  = \sigma^2 \int_0^T (q_t - \bar q)^2\, dt,
+\]
+where \(\bar q\) is the time-average inventory
+\[
+  \bar q = \frac{1}{T} \int_0^T q_t\, dt.
+\]
+
+\subsection{Variational Formulation}
+
+Using \(v_t = -\dot q_t\), we obtain (up to constants)
+\[
+  J_{\mathrm{TWAP}}[q]
+  = \eta \int_0^T \dot q_t^{\,2}\, dt
+    + \lambda \sigma^2 \int_0^T (q_t - \bar q)^2\, dt,
+\]
+with
+\[
+  \bar q = \frac{1}{T}\int_0^T q_t\, dt,
+  \qquad
+  q_0 = Q,\quad q_T = 0.
+\]
+
+The Lagrangian is
+\[
+  \mathcal L_{\mathrm{TWAP}}(q,\dot q,t)
+  = \eta \dot q^{\,2} + \lambda \sigma^2 (q - \bar q)^{2},
+\]
+where \(\bar q\) is itself a functional of the trajectory \(q\).
+
+\subsection{Euler--Lagrange Equation and Shape of the Solution}
+
+Formally, if we treat \(\bar q\) as a constant parameter (and then enforce the consistency condition), the Euler--Lagrange equation has the same local form as in the TC case, but with \(Q\) replaced by \(\bar q\):
+\[
+  \ddot q - \kappa^2 (q - \bar q) = 0,
+  \qquad
+  \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+\]
+Defining \(y(t) = q(t) - \bar q\), we get
+\[
+  \ddot y - \kappa^2 y = 0,
+\]
+whose general solution is
+\[
+  q(t) = \bar q + A \cosh(\kappa t) + B \sinh(\kappa t).
+\]
+The constants \(A,B,\bar q\) are then determined by the three conditions
+\[
+  q(0) = Q,\qquad
+  q(T) = 0,\qquad
+  \bar q = \frac{1}{T} \int_0^T q(t)\, dt.
+\]
+Solving this linear system yields a hyperbolic solution which, for moderate \(\lambda\), is very close to a straight line corresponding to a pure TWAP schedule:
+\[
+  q_{\mathrm{TWAP}}(t) \approx Q \Big(1 - \frac{t}{T}\Big)
+\]
+in the low-risk-aversion limit.
+
+\section{Summary of Closed-Form Static Strategies}
+
+In the continuous-time Almgren--Chriss model with no permanent impact and linear temporary impact, the optimal deterministic (static) inventory trajectories in the mean--variance framework are:
+
+\begin{itemize}
+  \item \textbf{IS (benchmark \(S_0\)):}
+  \[
+    q_{\mathrm{IS}}(t)
+    = Q \frac{\sinh\big(\kappa (T - t)\big)}{\sinh(\kappa T)},
+    \qquad
+    \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+  \]
+  
+  \item \textbf{TC (benchmark \(S_T\)):}
+  \[
+    q_{\mathrm{TC}}(t)
+    = Q\left(1 - \frac{\sinh(\kappa t)}{\sinh(\kappa T)}\right),
+    \qquad
+    \kappa^2 = \frac{\lambda \sigma^2}{\eta}.
+  \]
+  
+  \item \textbf{TWAP (benchmark \(\frac{1}{T}\int_0^T S_t dt\)):}
+  The optimal trajectory solves
+  \[
+    \ddot q - \kappa^2 (q - \bar q) = 0,
+    \quad
+    q_0 = Q,\ q_T = 0,\quad
+    \bar q = \frac{1}{T}\int_0^T q(t)\, dt,
+  \]
+  yielding a hyperbolic profile that is very close to linear (pure TWAP) for small to moderate \(\lambda\).
+\end{itemize}
+
+These formulas provide the closed-form static strategies requested in Question~1 of the project and can be used directly to produce numerical plots for different parameter values.
+
+\end{document}
