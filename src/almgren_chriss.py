@@ -215,8 +215,8 @@ def cost_and_variance_is(
     expected_cost : float  (positive = loss to the trader)
     variance : float
     """
-    expected_cost = eta * np.trapz(v**2, t)
-    variance = sigma**2 * np.trapz(q**2, t)
+    expected_cost = eta * np.trapezoid(v**2, t)
+    variance = sigma**2 * np.trapezoid(q**2, t)
     return expected_cost, variance
 
 
@@ -247,8 +247,8 @@ def cost_and_variance_tc(
     expected_cost : float
     variance : float
     """
-    expected_cost = eta * np.trapz(v**2, t)
-    variance = sigma**2 * np.trapz((q - Q)**2, t)
+    expected_cost = eta * np.trapezoid(v**2, t)
+    variance = sigma**2 * np.trapezoid((q - Q)**2, t)
     return expected_cost, variance
 
 
