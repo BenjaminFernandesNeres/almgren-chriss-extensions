@@ -11,9 +11,6 @@ up to terminal step N where all inventory must be liquidated (q = 0).
 This is the discrete-time analogue of the continuous mean-variance problem solved
 analytically in almgren_chriss.py.  When the grid is fine enough, the two solutions
 should match — which we verify in the notebook (Section 1, Question 4).
-
-Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
-Date: April 2026
 """
 
 import numpy as np
