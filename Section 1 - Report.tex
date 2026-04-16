@@ -821,5 +821,519 @@ The IS and TC efficient frontiers coincide exactly:
 \]
 for all $\kap = \sqrt{\lambda\sigma^2/\eta} > 0$.
 \end{resultbox}
+% -------------------------------------------------------------------
+\section{Expected Utility Formulation for TC and TWAP}
+\label{sec:bonus-expected-utility}
+% -------------------------------------------------------------------
+
+This section answers the bonus question in the expected-utility framework for
+the \emph{Target Close} (TC) and \emph{TWAP} benchmarks only.
+We use the same model and notation as in the previous sections, and we avoid
+repeating the cash-flow and payoff derivations already established above.
+
+\begin{keybox}[State-variable caution]
+  The two HJB problems do not have the same primitive state variables:
+  \begin{itemize}[leftmargin=1.5em]
+    \item for TC, the state is $(t,x,s,q)$ because the benchmark depends on the
+          terminal price $S_T$;
+    \item for TWAP, the state is $(t,x,s,a,q)$, where
+          \[
+            A_t \coloneqq \frac{1}{T}\int_0^t S_u \dd u,
+            \qquad
+            \dd A_t = \frac{S_t}{T}\dd t,
+          \]
+          because the benchmark depends on the whole price path.
+  \end{itemize}
+\end{keybox}
+
+\subsection{Expected utility criterion}
+
+We replace the mean--variance objective by CARA utility:
+\[
+  U(x) = -e^{-\gamma x},
+  \qquad \gamma > 0.
+\]
+For a benchmark-dependent payoff $\Pi_B$, the optimization problem is
+\[
+  \max_q \E[-e^{-\gamma \Pi_B}],
+  \qquad
+  B \in \{\mathrm{TC}, \mathrm{TWAP}\}.
+\]
+
+% -------------------------------------------------------------------
+\subsection{Target Close (TC)}
+% -------------------------------------------------------------------
+
+\paragraph{Value function and HJB.}
+For the TC benchmark, the payoff is
+\[
+  \Pi_{\mathrm{TC}} = X_T - QS_T.
+\]
+The value function is therefore
+\begin{equation}
+  V^{\mathrm{TC}}(t,x,s,q)
+  =
+  \sup_{(v_u)_{u \in [t,T]}}
+  \E_{t,x,s,q}\!\left[-e^{-\gamma(X_T - QS_T)}\right].
+  \label{eq:V-TC-bonus}
+\end{equation}
+Using the dynamics already introduced in the report,
+\[
+  \dd X_t = v_t(S_t-\eta v_t)\dd t,
+  \qquad
+  \dd S_t = \sigma \dd W_t,
+  \qquad
+  \dd q_t = -v_t \dd t,
+\]
+the HJB equation is
+\begin{equation}
+  0
+  =
+  V_t^{\mathrm{TC}}
+  +
+  \frac{1}{2}\sigma^2 V_{ss}^{\mathrm{TC}}
+  +
+  \sup_v
+  \left\{
+    v(s-\eta v)V_x^{\mathrm{TC}} - vV_q^{\mathrm{TC}}
+  \right\}.
+  \label{eq:HJB-TC-bonus}
+\end{equation}
+
+\paragraph{Exponential ansatz.}
+Since $q_T = 0$, the terminal payoff can be rewritten as
+\[
+  X_T - QS_T = X_T + (q_T - Q)S_T.
+\]
+This suggests the ansatz
+\begin{equation}
+  V^{\mathrm{TC}}(t,x,s,q)
+  =
+  -\exp\!\left(
+    -\gamma\bigl(x+(q-Q)s-\phi^{\mathrm{TC}}(t,q)\bigr)
+  \right).
+  \label{eq:ansatz-TC-bonus}
+\end{equation}
+The derivatives are
+\[
+  V_t^{\mathrm{TC}} = \gamma \phi_t^{\mathrm{TC}} V,
+  \qquad
+  V_x^{\mathrm{TC}} = -\gamma V,
+\]
+\[
+  V_q^{\mathrm{TC}} = -\gamma(s-\phi_q^{\mathrm{TC}})V,
+  \qquad
+  V_s^{\mathrm{TC}} = -\gamma(q-Q)V,
+\]
+\[
+  V_{ss}^{\mathrm{TC}} = \gamma^2(q-Q)^2V.
+\]
+
+\paragraph{Reduced HJB.}
+Substituting these derivatives into \eqref{eq:HJB-TC-bonus} gives
+\[
+  \gamma \phi_t^{\mathrm{TC}} V
+  +
+  \frac{1}{2}\sigma^2\gamma^2(q-Q)^2V
+  +
+  \sup_v
+  \left\{
+    (vs-\eta v^2)(-\gamma V)
+    -
+    v\bigl(-\gamma(s-\phi_q^{\mathrm{TC}})V\bigr)
+  \right\}
+  = 0.
+\]
+Expanding the control term,
+\[
+  (vs-\eta v^2)(-\gamma V)
+  -
+  v\bigl(-\gamma(s-\phi_q^{\mathrm{TC}})V\bigr)
+  =
+  \gamma\eta v^2V - \gamma v\phi_q^{\mathrm{TC}}V.
+\]
+Since $-\gamma V > 0$, dividing through by $-\gamma V$ yields
+\begin{equation}
+  -\phi_t^{\mathrm{TC}}
+  -
+  \frac{\gamma\sigma^2}{2}(q-Q)^2
+  +
+  \sup_v
+  \left\{
+    v\phi_q^{\mathrm{TC}} - \eta v^2
+  \right\}
+  = 0.
+  \label{eq:reduced-HJB-TC-bonus}
+\end{equation}
+The first-order condition is
+\[
+  \phi_q^{\mathrm{TC}} - 2\eta v = 0,
+  \qquad
+  v_{\mathrm{TC}}^*(t,q) = \frac{\phi_q^{\mathrm{TC}}(t,q)}{2\eta}.
+\]
+Hence the reduced HJB can be written as
+\begin{equation}
+  \phi_t^{\mathrm{TC}}
+  +
+  \inf_v
+  \left\{
+    \eta v^2 - v\phi_q^{\mathrm{TC}} + \frac{\gamma\sigma^2}{2}(q-Q)^2
+  \right\}
+  = 0.
+  \label{eq:TC-running-cost-bonus}
+\end{equation}
+So the induced running cost is
+\[
+  \eta v_t^2 + \frac{\gamma\sigma^2}{2}(q_t-Q)^2.
+\]
+More precisely, the reduced HJB is now in the standard deterministic form
+\[
+  \phi_t + \inf_v\{L(q_t,v_t) + b(q_t,v_t)\phi_q\} = 0,
+\]
+with state dynamics
+\[
+  \dot q_t = b(q_t,v_t) = -v_t
+\]
+and running cost
+\[
+  L(q_t,v_t)
+  =
+  \eta v_t^2 + \frac{\gamma\sigma^2}{2}(q_t-Q)^2.
+\]
+Hence the associated deterministic control problem is to minimize
+\[
+  \int_0^T L(q_t,v_t)\dd t
+\]
+subject to $\dot q_t=-v_t$. Replacing $v_t$ by $-\dot q_t$ gives an objective
+written entirely in terms of the inventory path $q$.
+
+\paragraph{Equivalent deterministic objective.}
+From the payoff representation derived earlier in the report,
+\[
+  \Pi_{\mathrm{TC}}
+  =
+  -\eta\!\int_0^T v_t^2 \dd t
+  +
+  \sigma\!\int_0^T (q_t-Q)\dd W_t.
+\]
+Because the strategy is deterministic, $\Pi_{\mathrm{TC}}$ is Gaussian with
+\[
+  \E[\Pi_{\mathrm{TC}}]
+  =
+  -\eta\!\int_0^T v_t^2 \dd t,
+  \qquad
+  \Var(\Pi_{\mathrm{TC}})
+  =
+  \sigma^2\!\int_0^T (q_t-Q)^2 \dd t.
+\]
+Since $\Pi_{\mathrm{TC}}$ is Gaussian and the utility is CARA,
+\[
+  \E[-e^{-\gamma \Pi_{\mathrm{TC}}}]
+  =
+  -\exp\!\left(
+    -\gamma \E[\Pi_{\mathrm{TC}}]
+    +
+    \frac{\gamma^2}{2}\Var(\Pi_{\mathrm{TC}})
+  \right).
+\]
+Because the exponential function is monotone, maximizing expected utility is
+equivalent to maximizing
+\[
+  \E[\Pi_{\mathrm{TC}}] - \frac{\gamma}{2}\Var(\Pi_{\mathrm{TC}}),
+\]
+or equivalently minimizing
+\[
+  -\E[\Pi_{\mathrm{TC}}] + \frac{\gamma}{2}\Var(\Pi_{\mathrm{TC}}).
+\]
+Therefore maximizing expected utility is equivalent to minimizing
+\begin{equation}
+  J_{\mathrm{TC}}^{\mathrm{EU}}[q]
+  =
+  \eta\!\int_0^T \dot q_t^2 \dd t
+  +
+  \frac{\gamma\sigma^2}{2}\!\int_0^T (q_t-Q)^2 \dd t.
+  \label{eq:J-TC-bonus}
+\end{equation}
+
+\paragraph{Optimal TC strategy.}
+The Euler--Lagrange equation associated with \eqref{eq:J-TC-bonus} is
+\[
+  \frac{\dd}{\dd t}(2\eta \dot q_t) - \gamma\sigma^2(q_t-Q) = 0,
+\]
+that is,
+\begin{equation}
+  \ddot q_t = \kap^2(q_t-Q),
+  \qquad
+  \kap^2 = \frac{\gamma\sigma^2}{2\eta}.
+  \label{eq:EL-TC-bonus}
+\end{equation}
+Let $y_t \coloneqq q_t-Q$. Then
+\[
+  \ddot y_t = \kap^2 y_t,
+  \qquad
+  y_0 = 0,
+  \qquad
+  y_T = -Q.
+\]
+The general solution is
+\[
+  y_t = A\sinh(\kap t) + B\cosh(\kap t).
+\]
+Since $y_0 = 0$, we get $B=0$. Since $y_T = -Q$, we get
+\[
+  A = -\frac{Q}{\sinh(\kap T)}.
+\]
+Therefore
+\[
+  y_t = -Q\frac{\sinh(\kap t)}{\sinh(\kap T)},
+\]
+and the optimal TC inventory is
+\begin{equation}
+  \boxed{
+    q_{\mathrm{TC}}^*(t)
+    =
+    Q\left(1-\frac{\sinh(\kap t)}{\sinh(\kap T)}\right).
+  }
+  \label{eq:qstar-TC-bonus}
+\end{equation}
+
+% -------------------------------------------------------------------
+\subsection{TWAP}
+% -------------------------------------------------------------------
+
+\paragraph{Value function and HJB.}
+For TWAP, the benchmark is the running time average
+\[
+  A_T = \frac{1}{T}\int_0^T S_u \dd u,
+\]
+so the payoff is
+\[
+  \Pi_{\mathrm{TWAP}} = X_T - QA_T.
+\]
+The value function is
+\begin{equation}
+  V^{\mathrm{TWAP}}(t,x,s,a,q)
+  =
+  \sup_{(v_u)_{u \in [t,T]}}
+  \E_{t,x,s,a,q}\!\left[-e^{-\gamma(X_T-QA_T)}\right].
+  \label{eq:V-TWAP-bonus}
+\end{equation}
+The HJB equation now includes the extra state variable $a=A_t$:
+\begin{equation}
+  0
+  =
+  V_t^{\mathrm{TWAP}}
+  +
+  \frac{1}{2}\sigma^2 V_{ss}^{\mathrm{TWAP}}
+  +
+  \frac{s}{T}V_a^{\mathrm{TWAP}}
+  +
+  \sup_v
+  \left\{
+    v(s-\eta v)V_x^{\mathrm{TWAP}} - vV_q^{\mathrm{TWAP}}
+  \right\}.
+  \label{eq:HJB-TWAP-bonus}
+\end{equation}
+
+\paragraph{Exponential ansatz.}
+To match the terminal payoff $X_T-QA_T$, we use
+\begin{equation}
+  V^{\mathrm{TWAP}}(t,x,s,a,q)
+  =
+  -\exp\!\left(
+    -\gamma\left(
+      x+\left(q-Q\frac{T-t}{T}\right)s-Qa-\phi^{\mathrm{TWAP}}(t,q)
+    \right)
+  \right).
+  \label{eq:ansatz-TWAP-bonus}
+\end{equation}
+At time $T$, the coefficient of $s$ vanishes, so this indeed becomes
+$x-Qa$.
+
+From \eqref{eq:ansatz-TWAP-bonus}, the derivatives are
+\[
+  V_t^{\mathrm{TWAP}}
+  =
+  \gamma\left(\phi_t^{\mathrm{TWAP}}-\frac{Q}{T}s\right)V,
+\]
+\[
+  V_x^{\mathrm{TWAP}} = -\gamma V,
+  \qquad
+  V_q^{\mathrm{TWAP}} = -\gamma(s-\phi_q^{\mathrm{TWAP}})V,
+\]
+\[
+  V_s^{\mathrm{TWAP}}
+  =
+  -\gamma\left(q-Q\frac{T-t}{T}\right)V,
+  \qquad
+  V_{ss}^{\mathrm{TWAP}}
+  =
+  \gamma^2\left(q-Q\frac{T-t}{T}\right)^2V,
+\]
+\[
+  V_a^{\mathrm{TWAP}} = \gamma QV.
+\]
+
+\paragraph{Reduced HJB.}
+Substituting these derivatives into \eqref{eq:HJB-TWAP-bonus}, the terms
+involving $Qs/T$ cancel. Dividing through by $-\gamma V > 0$ yields
+\begin{equation}
+  -\phi_t^{\mathrm{TWAP}}
+  -
+  \frac{\gamma\sigma^2}{2}
+  \left(q-Q\frac{T-t}{T}\right)^2
+  +
+  \sup_v
+  \left\{
+    v\phi_q^{\mathrm{TWAP}} - \eta v^2
+  \right\}
+  = 0.
+  \label{eq:reduced-HJB-TWAP-bonus}
+\end{equation}
+Equivalently,
+\begin{equation}
+  \phi_t^{\mathrm{TWAP}}
+  +
+  \inf_v
+  \left\{
+    \eta v^2
+    -
+    v\phi_q^{\mathrm{TWAP}}
+    +
+    \frac{\gamma\sigma^2}{2}
+    \left(q-Q\frac{T-t}{T}\right)^2
+  \right\}
+  = 0.
+  \label{eq:TWAP-running-cost-bonus}
+\end{equation}
+So the induced running cost is
+\[
+  \eta v_t^2
+  +
+  \frac{\gamma\sigma^2}{2}
+  \left(q_t-Q\frac{T-t}{T}\right)^2.
+\]
+Again, this is a deterministic HJB of the form
+\[
+  \phi_t + \inf_v\{L(q_t,v_t) + b(q_t,v_t)\phi_q\} = 0,
+\]
+with
+\[
+  \dot q_t = b(q_t,v_t) = -v_t
+\]
+and
+\[
+  L(q_t,v_t)
+  =
+  \eta v_t^2
+  +
+  \frac{\gamma\sigma^2}{2}
+  \left(q_t-Q\frac{T-t}{T}\right)^2.
+\]
+Therefore the associated deterministic control problem is to minimize
+\[
+  \int_0^T L(q_t,v_t)\dd t
+\]
+subject to $\dot q_t=-v_t$. Replacing $v_t$ by $-\dot q_t$ gives the
+deterministic objective below.
+
+\paragraph{Equivalent deterministic objective.}
+From the payoff representation already obtained in the report,
+\[
+  \Pi_{\mathrm{TWAP}}
+  =
+  -\eta\!\int_0^T v_t^2 \dd t
+  +
+  \sigma\!\int_0^T
+  \left(q_t-Q\frac{T-t}{T}\right)\dd W_t.
+\]
+Since the strategy is deterministic, $\Pi_{\mathrm{TWAP}}$ is Gaussian and
+maximizing expected utility is equivalent to minimizing
+\begin{equation}
+  J_{\mathrm{TWAP}}^{\mathrm{EU}}[q]
+  =
+  \eta\!\int_0^T \dot q_t^2 \dd t
+  +
+  \frac{\gamma\sigma^2}{2}\!\int_0^T
+  \left(q_t-Q\frac{T-t}{T}\right)^2 \dd t.
+  \label{eq:J-TWAP-bonus}
+\end{equation}
+
+\paragraph{Optimal TWAP strategy.}
+The Euler--Lagrange equation associated with \eqref{eq:J-TWAP-bonus} is
+\begin{equation}
+  \ddot q_t
+  =
+  \kap^2\left(q_t-Q\frac{T-t}{T}\right).
+  \label{eq:EL-TWAP-bonus}
+\end{equation}
+Define the deviation from the TWAP benchmark path by
+\[
+  y_t \coloneqq q_t-Q\frac{T-t}{T}.
+\]
+Since $Q(T-t)/T$ is linear in $t$, its second derivative is zero, so
+\[
+  \ddot y_t = \kap^2 y_t.
+\]
+The boundary conditions become
+\[
+  y_0 = q_0-Q = 0,
+  \qquad
+  y_T = q_T-0 = 0.
+\]
+The only solution is therefore
+\[
+  y_t \equiv 0.
+\]
+Hence the optimal TWAP inventory is exactly
+\begin{equation}
+  \boxed{
+    q_{\mathrm{TWAP}}^*(t)
+    =
+    Q\frac{T-t}{T}.
+  }
+  \label{eq:qstar-TWAP-bonus}
+\end{equation}
+
+\subsection{Final comparison with the mean--variance framework}
+
+For both benchmarks, the expected-utility problem reduces to the deterministic
+quadratic objective
+\[
+  J_B^{\mathrm{EU}}[q]
+  =
+  \eta\!\int_0^T \dot q_t^2 \dd t
+  +
+  \frac{\gamma\sigma^2}{2}\!\int_0^T (q_t-f_B(t))^2 \dd t,
+\]
+with
+\[
+  f_{\mathrm{TC}}(t)=Q,
+  \qquad
+  f_{\mathrm{TWAP}}(t)=Q\frac{T-t}{T}.
+\]
+Comparing with the mean--variance objective derived earlier in the report shows
+that the two frameworks coincide after the identification
+\[
+  \boxed{\lambda = \frac{\gamma}{2}}.
+\]
+
+\begin{resultbox}[Final answer]
+  In the expected-utility framework, the optimal strategies are
+  \[
+    q_{\mathrm{TC}}^*(t)
+    =
+    Q\left(1-\frac{\sinh(\kap t)}{\sinh(\kap T)}\right),
+    \qquad
+    q_{\mathrm{TWAP}}^*(t)
+    =
+    Q\frac{T-t}{T},
+  \]
+  with
+  \[
+    \kap = \sqrt{\frac{\gamma\sigma^2}{2\eta}}.
+  \]
+  The primitive HJB state is $(t,x,s,q)$ for TC and $(t,x,s,a,q)$ for TWAP.
+\end{resultbox}
 
 \end{document}
