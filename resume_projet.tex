@@ -1,0 +1,219 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\geometry{margin=2.5cm}
+
+\definecolor{mainblue}{RGB}{30, 80, 160}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+
+\titleformat{\section}{\large\bfseries\color{mainblue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\title{
+    \vspace{-1cm}
+    {\large Marchés Électroniques — Projet 1}\\[0.4em]
+    {\LARGE\bfseries\color{mainblue} Résumé du Projet}\\[0.3em]
+    {\normalsize Modèle d'Almgren-Chriss : Stratégies de Liquidation Optimale}
+}
+\author{Pour Fernando — version de prise en main rapide}
+\date{Avril 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+% ─────────────────────────────────────────────
+\section{C'est quoi le problème en deux phrases ?}
+
+On a un gros paquet d'actions à vendre. On ne peut pas tout vendre d'un coup (ça ferait chuter le prix). On cherche \textbf{comment étaler les ventes dans le temps} pour minimiser les coûts tout en limitant le risque.
+
+\medskip
+\colorbox{lightgray}{\parbox{\linewidth}{\small
+\textbf{Intuition clé :} Vendre vite $\Rightarrow$ impact de marché élevé (coût fort, risque faible).
+Vendre lentement $\Rightarrow$ impact faible, mais le prix peut bouger pendant qu'on attend (risque fort).
+Il faut trouver le bon équilibre.
+}}
+
+% ─────────────────────────────────────────────
+\section{Notations de base}
+
+\begin{itemize}[noitemsep]
+    \item $Q$ : quantité initiale d'actions à vendre
+    \item $T$ : horizon de temps (durée totale pour tout vendre)
+    \item $q(t)$ : inventaire restant à l'instant $t$ (on part de $Q$, on finit à $0$)
+    \item $v(t) = -\dot{q}(t)$ : vitesse de vente à l'instant $t$
+    \item $\eta$ : coefficient d'impact de marché (plus $\eta$ est grand, plus vendre vite coûte cher)
+    \item $\sigma$ : volatilité du prix
+    \item $\lambda$ : aversion au risque (paramètre du trader)
+    \item $\kappa = \sqrt{\lambda\sigma^2/\eta}$ : taux caractéristique qui règle la forme des stratégies
+\end{itemize}
+
+% ─────────────────────────────────────────────
+\section{Section 1 — Trois types d'ordres classiques}
+
+On compare trois stratégies optimales selon le \textbf{benchmark de prix} utilisé.
+
+\subsection{Implementation Shortfall (IS) — Benchmark : prix initial $S_0$}
+
+On mesure le coût par rapport au prix au moment où on \emph{décide} de vendre.
+
+$\Rightarrow$ La stratégie optimale est \textbf{agressive au début} (on vend beaucoup au départ puis on ralentit).
+
+\[
+q^*(t) = Q \cdot \frac{\sinh(\kappa(T-t))}{\sinh(\kappa T)}
+\]
+
+Logique : on veut réduire l'inventaire rapidement pour ne pas être exposé trop longtemps à la volatilité.
+
+\subsection{Target Close (TC) — Benchmark : prix final $S_T$}
+
+On mesure le coût par rapport au prix de \emph{clôture}.
+
+$\Rightarrow$ La stratégie optimale est \textbf{lente au début, puis accélère vers la fin}.
+
+\[
+q^*(t) = Q\left(1 - \frac{\sinh(\kappa t)}{\sinh(\kappa T)}\right)
+\]
+
+Logique : on attend le plus longtemps possible pour coller au prix final.
+
+\subsection{TWAP — Benchmark : prix moyen sur $[0,T]$}
+
+On mesure le coût par rapport au \emph{prix moyen} sur toute la période.
+
+$\Rightarrow$ La stratégie optimale est toujours \textbf{linéaire}, indépendamment de $\lambda$ !
+
+\[
+q^*(t) = Q \cdot \frac{T-t}{T}
+\]
+
+Logique : vendre à rythme constant minimise simultanément coût et variance.
+
+\medskip
+\colorbox{lightgray}{\parbox{\linewidth}{\small
+\textbf{Résultat remarquable :} IS et TC ont la même frontière efficace (symétrie temporelle). Le TWAP est un point unique sur cette frontière.
+}}
+
+% ─────────────────────────────────────────────
+\section{Section 2 — Méthode numérique (Euler + Shooting)}
+
+Le but ici : \textbf{retrouver numériquement} les solutions analytiques de la Section 1.
+
+\subsection{Pourquoi faire ça ?}
+
+Les formules de la Section 1 existent car le problème est simple. Mais dans des cas plus complexes (actifs multiples, contraintes...), on n'a pas de formule. Il faut des méthodes numériques.
+
+\subsection{Ce qu'on fait concrètement}
+
+\begin{enumerate}[noitemsep]
+    \item L'optimisation donne une \textbf{équation différentielle} : $\ddot{q}(t) = \kappa^2 q(t)$
+    \item On connaît $q(0) = Q$ mais pas $v(0) = \dot{q}(0)$ (la vitesse initiale)
+    \item On \textbf{tire} (shooting) : on essaie plusieurs valeurs de $v(0)$ et on intègre numériquement avec le schéma d'Euler
+    \item On cherche par bissection la valeur de $v(0)$ telle que $q(T) = 0$
+\end{enumerate}
+
+\medskip
+\colorbox{lightgray}{\parbox{\linewidth}{\small
+\textbf{Résultat :} La solution numérique coïncide avec la formule analytique — validation croisée réussie.
+}}
+
+% ─────────────────────────────────────────────
+\section{Section 3 — Deux actifs avec couverture croisée}
+
+On passe à un problème plus réaliste : \textbf{deux actifs corrélés}.
+
+\subsection{Setup}
+
+\begin{itemize}[noitemsep]
+    \item $S^1$ : actif illiquide (fort impact $\eta_1 = 0.2$) — on \emph{doit} le vendre entièrement
+    \item $S^2$ : actif liquide (faible impact $\eta_2 = 0.01$) — on peut aller short pour \emph{couvrir}
+    \item Corrélation $\rho = 0.95$ : les deux actifs bougent presque ensemble
+\end{itemize}
+
+\subsection{Idée clé}
+
+Quand on détient beaucoup de $S^1$, on est exposé à un risque de prix fort. En shortant $S^2$ (qui est très corrélé), on réduit cette exposition.
+
+\[
+\text{Coût total} = \underbrace{\eta_1 \int v_1^2\,dt + \eta_2 \int v_2^2\,dt}_{\text{coût d'impact}}
++ \lambda \underbrace{\int \left(\sigma_1^2 q_1^2 + 2\rho\sigma_1\sigma_2 q_1 q_2 + \sigma_2^2 q_2^2\right)dt}_{\text{variance du portefeuille}}
+\]
+
+Le terme croisé $2\rho\sigma_1\sigma_2 q_1 q_2$ devient \textbf{négatif} si $q_2 < 0$ (position short), ce qui réduit la variance.
+
+\subsection{Méthode}
+
+On utilise la \textbf{programmation dynamique de Bellman} sur une grille $(t, q_1, q_2)$ : on remonte en arrière dans le temps pour calculer la stratégie optimale.
+
+\medskip
+\colorbox{lightgray}{\parbox{\linewidth}{\small
+\textbf{Résultat :} Shorter $S^2$ réduit la variance de \textasciitilde20-30\% pour un coût supplémentaire modeste — la couverture croisée est rentable.
+}}
+
+% ─────────────────────────────────────────────
+\section{Section 4 (Bonus) — Réseaux de neurones}
+
+\subsection{Objectif}
+
+Apprendre la stratégie optimale \textbf{sans formule analytique}, juste en entraînant un réseau de neurones.
+
+\subsection{Comment ça marche}
+
+\begin{itemize}[noitemsep]
+    \item On paramètre la politique : $v_t = \pi_\theta(t/T,\; q_t/Q)$ (un MLP avec poids $\theta$)
+    \item La fonction de perte est le coût moyen-variance simulé par Monte Carlo
+    \item On minimise avec Adam (gradient descent)
+    \item Trois réseaux entraînés : IS, TC, et POV (participation au volume)
+\end{itemize}
+
+\medskip
+\colorbox{lightgray}{\parbox{\linewidth}{\small
+\textbf{Résultat :} Les réseaux IS et TC retrouvent les solutions analytiques. Le réseau POV apprend une stratégie sans formule connue — preuve que l'approche est générale.
+}}
+
+% ─────────────────────────────────────────────
+\section{Vue d'ensemble — Ce que fait le code}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Fichier} & \textbf{Contenu} & \textbf{Rôle} \\
+\midrule
+\texttt{src/almgren\_chriss.py} & Formules analytiques & Stratégies IS, TC, TWAP \\
+\texttt{src/bellman.py} & Prog. dynamique & Bellman 1 actif et 2 actifs \\
+\texttt{main.ipynb} & Notebook principal & Calculs + graphiques \\
+\texttt{Section 1 - Report.tex} & Rapport Section 1 & Dérivations mathématiques \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ─────────────────────────────────────────────
+\section{Schéma mental global}
+
+\begin{center}
+\begin{tabular}{ccc}
+\textbf{Section 1} & \textbf{Section 2} & \textbf{Section 3--4} \\
+Formules exactes & Méthodes numériques & Extensions \\
+1 actif, 3 benchmarks & Euler + Shooting & 2 actifs / NN \\
+$\downarrow$ & $\downarrow$ & $\downarrow$ \\
+Solution analytique & Validation numérique & Généralisation \\
+\end{tabular}
+\end{center}
+
+\vfill
+\hrule
+\smallskip
+{\small\textit{Ce document est un résumé de prise en main. Pour les démonstrations complètes, voir \texttt{Section 1 - Report.tex} et \texttt{main.ipynb}.}}
+
+\end{document}
