@@ -51,7 +51,7 @@ def bellman_two_assets(
     State: (k, i, j) = (time step, index of q1, index of q2)
     Action: (n1, n2) = shares of S1 and S2 sold at step k.
 
-    q1 in [0, Q], q2 in [-Q, 0] (we short S2 to hedge, so q2 <= 0).
+    q1 in [0, Q], q2 in [-Q, Q] (short when rho > 0, long when rho < 0).
     At terminal time: q1 = 0, q2 = 0.
 
     Running cost at state (q1_i, q2_j) selling (n1, n2):
@@ -88,7 +88,7 @@ def bellman_two_assets(
     -------
     t_grid : np.ndarray, shape (N+1,)
     q1_grid : np.ndarray, shape (n_q+1,)   — S1 inventory grid [0, Q]
-    q2_grid : np.ndarray, shape (n_q+1,)   — S2 inventory grid [-Q, 0]
+    q2_grid : np.ndarray, shape (n_q+1,)   — S2 inventory grid [-Q, Q]
     q1_path : np.ndarray, shape (N+1,)     — optimal S1 inventory path
     q2_path : np.ndarray, shape (N+1,)     — optimal S2 inventory path
     """
@@ -97,12 +97,12 @@ def bellman_two_assets(
 
     # S1: long, we sell from Q down to 0
     q1_grid = np.linspace(0.0, Q, n_q + 1)
-    # S2: we can go short (sell S2 we don't own to hedge), from 0 down to -Q
-    q2_grid = np.linspace(-Q, 0.0, n_q + 1)
+    # S2: full range [-Q, Q] — short when rho > 0, long when rho < 0
+    q2_grid = np.linspace(-Q, Q, n_q + 1)
 
     # Indices for zero inventory on each grid
     idx_q1_zero = 0       # q1_grid[0] = 0
-    idx_q2_zero = n_q     # q2_grid[n_q] = 0
+    idx_q2_zero = n_q // 2  # q2_grid[n_q//2] ≈ 0 (exact when n_q is even)
 
     # Value function V[k, i, j] = cost-to-go at step k, q1=q1_grid[i], q2=q2_grid[j]
     V = np.full((N + 1, n_q + 1, n_q + 1), np.inf)

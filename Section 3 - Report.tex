@@ -1,0 +1,496 @@
+\documentclass[12pt, a4paper]{article}
+
+% ---------- packages ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{mdframed}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+% ---------- colour palette ----------
+\definecolor{accentblue}{RGB}{30, 60, 110}
+\definecolor{lightblue}{RGB}{220, 232, 248}
+\definecolor{warmgray}{RGB}{245, 242, 237}
+\definecolor{borderblue}{RGB}{80, 120, 180}
+\definecolor{notegreen}{RGB}{0, 100, 60}
+\definecolor{darkorange}{RGB}{170, 80, 0}
+
+% ---------- section formatting ----------
+\titleformat{\section}{\large\bfseries\color{accentblue}}{}{0em}{\thesection\quad}[\vspace{-0.3em}\textcolor{accentblue}{\rule{\linewidth}{0.8pt}}]
+\titleformat{\subsection}{\normalsize\bfseries\color{accentblue}}{}{0em}{\thesubsection\quad}
+
+% ---------- tcolorbox styles ----------
+\tcbuselibrary{breakable, skins}
+
+\newtcolorbox{keybox}[1][]{
+  enhanced, breakable,
+  colback=lightblue, colframe=accentblue,
+  boxrule=1pt, arc=4pt,
+  fonttitle=\bfseries\small\color{accentblue},
+  title={#1}
+}
+
+\newtcolorbox{resultbox}[1][]{
+  enhanced, breakable,
+  colback=warmgray, colframe=accentblue,
+  boxrule=1.5pt, arc=4pt,
+  fonttitle=\bfseries\small\color{accentblue},
+  title={#1}
+}
+
+\newtcolorbox{notebox}[1][]{
+  enhanced, breakable,
+  colback=white, colframe=darkorange,
+  boxrule=0.8pt, leftrule=4pt, arc=2pt,
+  fonttitle=\bfseries\small\color{darkorange},
+  title={#1}
+}
+
+% ---------- custom commands ----------
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\kap}{\kappa}
+
+% ---------- title ----------
+\title{%
+  \textbf{\textcolor{accentblue}{Liquidating Two Correlated Assets}}\\[4pt]
+  \large Almgren--Chriss Framework with Cross-Asset Hedging\\
+  \normalsize Mean--Variance Criterion, Bellman Backward Induction\\[6pt]
+}
+\author{}
+\date{}
+
+% ============================================================
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% -------------------------------------------------------------------
+\section{Model Setup}
+% -------------------------------------------------------------------
+
+We now extend the single-asset Almgren--Chriss framework to two risky assets
+$S^1$ and $S^2$ with correlated price dynamics.
+
+\paragraph{Price dynamics.}
+Both assets follow arithmetic Brownian motions (no drift, no permanent impact):
+\[
+  \dd S^1_t = \sigma_1 \dd W^1_t,
+  \qquad
+  \dd S^2_t = \sigma_2 \dd W^2_t,
+  \qquad
+  \dd\langle W^1, W^2\rangle_t = \rho\,\dd t,
+\]
+where $\sigma_1, \sigma_2 > 0$ are volatilities and $\rho \in (-1,1)$ is the
+instantaneous correlation between the two Brownian motions.
+
+\paragraph{Inventory and constraints.}
+\begin{itemize}[leftmargin=1.5em]
+  \item $q^1_t$: shares of $S^1$ held at time $t$, with $q^1_0 = Q > 0$ and $q^1_T = 0$.
+  \item $q^2_t$: shares of $S^2$ held at time $t$, with $q^2_0 = 0$ and $q^2_T = 0$.
+  \item $v^i_t = -\dot{q}^i_t$: trading speed for asset $i \in \{1,2\}$.
+\end{itemize}
+The trader starts with $Q$ shares of $S^1$ and no position in $S^2$.
+Both positions must be flat at time $T$.
+
+\paragraph{Temporary market impact.}
+Trading at speed $v^i_t$ incurs a quadratic liquidity cost:
+\[
+  \text{impact cost} = \eta_i (v^i_t)^2 \dd t,
+\]
+where $\eta_1, \eta_2 > 0$ are the impact coefficients.
+We assume $\eta_2 < \eta_1$: asset $S^2$ is more liquid than $S^1$.
+
+\begin{notebox}[Why trade $S^2$ at all?]
+  Although the trader holds no $S^2$ initially, trading it is useful when
+  $|\rho|$ is large: going short $S^2$ (if $\rho > 0$) or long $S^2$
+  (if $\rho < 0$) creates a hedge that offsets the price risk of holding $S^1$,
+  at a lower liquidity cost since $\eta_2 \ll \eta_1$.
+\end{notebox}
+
+% -------------------------------------------------------------------
+\section{Cash Flow and Payoff}
+% -------------------------------------------------------------------
+
+\paragraph{Cash account dynamics.}
+The trader's cash account $X_t$ evolves as:
+\[
+  \dd X_t
+  = q^1_t \dd S^1_t + q^2_t \dd S^2_t
+  - \eta_1 (v^1_t)^2 \dd t - \eta_2 (v^2_t)^2 \dd t.
+\]
+The first two terms are the mark-to-market P\&L from holding the positions;
+the last two are the liquidity costs from trading.
+
+\paragraph{Integrated cash flow.}
+Integrating over $[0,T]$:
+\[
+  X_T = X_0
+  + \int_0^T q^1_t \dd S^1_t
+  + \int_0^T q^2_t \dd S^2_t
+  - \eta_1\int_0^T (v^1_t)^2 \dd t
+  - \eta_2\int_0^T (v^2_t)^2 \dd t.
+\]
+
+\paragraph{IS payoff.}
+We measure performance relative to the IS benchmark $QS^1_0$
+(the ideal cash received if all shares of $S^1$ were sold instantly at $t=0$):
+\[
+  \Pi = X_T - QS^1_0.
+\]
+By the Almgren--Chriss normalisation $X_0 = QS^1_0$, this simplifies to:
+\[
+  \Pi
+  = \int_0^T q^1_t \dd S^1_t
+  + \int_0^T q^2_t \dd S^2_t
+  - \eta_1\int_0^T (v^1_t)^2 \dd t
+  - \eta_2\int_0^T (v^2_t)^2 \dd t.
+\]
+
+% -------------------------------------------------------------------
+\section{Mean--Variance Criterion}
+% -------------------------------------------------------------------
+
+\subsection{Objective}
+
+Following the course formalism, we maximise:
+\[
+  \max_{v^1,\,v^2}\;\E[\Pi] - \lambda\,\Var(\Pi),
+\]
+or equivalently minimise:
+\[
+  \min_{v^1,\,v^2}\;-\E[\Pi] + \lambda\,\Var(\Pi).
+\]
+
+\subsection{Deriving \texorpdfstring{$-\E[\Pi]$}{-E[Pi]}}
+
+Since strategies are deterministic and $\dd S^i_t = \sigma_i \dd W^i_t$ is a
+martingale, the stochastic integrals have zero expectation:
+\[
+  \E\!\left[\int_0^T q^i_t \dd S^i_t\right] = 0, \qquad i = 1, 2.
+\]
+Therefore:
+\[
+  \E[\Pi] = -\eta_1\int_0^T (v^1_t)^2 \dd t - \eta_2\int_0^T (v^2_t)^2 \dd t,
+\]
+and:
+\begin{equation}
+  -\E[\Pi] = \eta_1\int_0^T (v^1_t)^2 \dd t + \eta_2\int_0^T (v^2_t)^2 \dd t.
+  \label{eq:neg-mean}
+\end{equation}
+
+\subsection{Deriving \texorpdfstring{$\Var(\Pi)$}{Var(Pi)}}
+
+The payoff decomposes into a deterministic part (the liquidity costs) and a
+stochastic part (the P\&L from price moves). Since the deterministic part
+does not contribute to variance:
+\[
+  \Var(\Pi)
+  = \E\!\left[
+      \left(\int_0^T q^1_t \dd S^1_t + \int_0^T q^2_t \dd S^2_t\right)^{\!2}
+    \right].
+\]
+Expanding the square:
+\[
+  \Var(\Pi)
+  = \E\!\left[\left(\int_0^T q^1_t \dd S^1_t\right)^{\!2}\right]
+  + \E\!\left[\left(\int_0^T q^2_t \dd S^2_t\right)^{\!2}\right]
+  + 2\,\E\!\left[\int_0^T q^1_t \dd S^1_t \cdot \int_0^T q^2_t \dd S^2_t\right].
+\]
+
+\paragraph{Diagonal terms (It\^{o} isometry).}
+Since $\dd S^i_t = \sigma_i \dd W^i_t$ and $q^i_t$ is deterministic:
+\[
+  \E\!\left[\left(\int_0^T q^i_t \dd S^i_t\right)^{\!2}\right]
+  = \sigma_i^2 \int_0^T (q^i_t)^2 \dd t.
+\]
+
+\paragraph{Cross term.}
+Using the quadratic covariation $\dd\langle S^1, S^2\rangle_t = \rho\sigma_1\sigma_2\,\dd t$:
+\[
+  \E\!\left[\int_0^T q^1_t \dd S^1_t \cdot \int_0^T q^2_t \dd S^2_t\right]
+  = \rho\sigma_1\sigma_2\int_0^T q^1_t q^2_t \dd t.
+\]
+
+\paragraph{Full variance.}
+\begin{equation}
+  \Var(\Pi)
+  = \sigma_1^2\int_0^T (q^1_t)^2 \dd t
+  + \sigma_2^2\int_0^T (q^2_t)^2 \dd t
+  + 2\rho\sigma_1\sigma_2\int_0^T q^1_t q^2_t \dd t.
+  \label{eq:variance}
+\end{equation}
+
+\begin{keybox}[Role of the cross term]
+  The cross term $2\rho\sigma_1\sigma_2\int_0^T q^1_t q^2_t\,\dd t$ is the key
+  to understanding the hedge:
+  \begin{itemize}[leftmargin=1.5em]
+    \item If $\rho > 0$ and the trader goes \textbf{short} $S^2$ ($q^2_t < 0$),
+          then $q^1_t q^2_t < 0$, making the cross term negative — reducing variance.
+    \item If $\rho < 0$ and the trader goes \textbf{long} $S^2$ ($q^2_t > 0$),
+          then $q^1_t q^2_t > 0$ but $\rho < 0$, again making the cross term negative.
+    \item In both cases, the sign of the optimal $q^2$ follows $-\operatorname{sign}(\rho)$:
+          the hedge direction is always set to reduce variance.
+  \end{itemize}
+\end{keybox}
+
+\subsection{Full Optimisation Problem}
+
+Combining \eqref{eq:neg-mean} and \eqref{eq:variance}:
+
+\begin{resultbox}[Two-asset mean--variance problem]
+\[
+  \min_{v^1,\,v^2}\;
+  \eta_1\int_0^T (v^1_t)^2 \dd t
+  + \eta_2\int_0^T (v^2_t)^2 \dd t
+  + \lambda\!\left(
+      \sigma_1^2\int_0^T (q^1_t)^2 \dd t
+      + \sigma_2^2\int_0^T (q^2_t)^2 \dd t
+      + 2\rho\sigma_1\sigma_2\int_0^T q^1_t q^2_t \dd t
+    \right)
+\]
+subject to $q^1_0 = Q,\; q^1_T = 0,\; q^2_0 = 0,\; q^2_T = 0$.
+\end{resultbox}
+
+\begin{notebox}[Generalisation to $n$ assets]
+  With $n$ assets, covariance matrix $\Sigma_{ij} = \rho_{ij}\sigma_i\sigma_j$,
+  and diagonal impact matrix $H = \mathrm{diag}(\eta_1,\ldots,\eta_n)$, the
+  problem takes the compact matrix form:
+  \[
+    \min_{\mathbf{v}}
+    \int_0^T \mathbf{v}_t^\top H\,\mathbf{v}_t \dd t
+    + \lambda\int_0^T \mathbf{q}_t^\top \Sigma\,\mathbf{q}_t \dd t.
+  \]
+  The 2-asset case above is the special case $n = 2$.
+\end{notebox}
+
+% -------------------------------------------------------------------
+\section{Why No Closed-Form Solution?}
+% -------------------------------------------------------------------
+
+In the single-asset case, the Euler--Lagrange equation yields a single ODE
+$\ddot{q} = \kap^2 q$ with explicit $\sinh/\cosh$ solution.
+
+For two assets, the optimality conditions give a \emph{coupled} system:
+\[
+  \begin{cases}
+    \eta_1\,\ddot{q}^1 = \lambda\bigl(\sigma_1^2\,q^1 + \rho\sigma_1\sigma_2\,q^2\bigr), \\[4pt]
+    \eta_2\,\ddot{q}^2 = \lambda\bigl(\sigma_2^2\,q^2 + \rho\sigma_1\sigma_2\,q^1\bigr).
+  \end{cases}
+\]
+This is a \textbf{Boundary Value Problem (BVP)}: conditions are imposed at
+\emph{both} ends of the interval,
+\[
+  q^1(0) = Q,\; q^2(0) = 0 \qquad \text{and} \qquad q^1(T) = 0,\; q^2(T) = 0.
+\]
+To integrate forward from $t=0$, one would also need $\dot{q}^1(0)$ and
+$\dot{q}^2(0)$, which are \emph{unknown} and depend on all parameters
+$(\rho, \eta_1, \eta_2, \sigma_1, \sigma_2)$ in a non-trivial way.
+For general parameters, this system admits no clean closed-form solution.
+
+\begin{keybox}[When does a closed form exist?]
+  In the special case $\sigma_1 = \sigma_2$ and $\eta_1 = \eta_2$, the two
+  equations decouple after a rotation of coordinates, and explicit
+  $\sinh/\cosh$ solutions can be recovered. In the general case,
+  Bergault, Drissi and Gu\'eant (2021) show that the solution satisfies a
+  \emph{matrix Riccati ODE}, which requires numerical integration.
+\end{keybox}
+
+% -------------------------------------------------------------------
+\section{Bellman Backward Induction on a 2D Grid}
+\label{sec:bellman}
+% -------------------------------------------------------------------
+
+\subsection{Why Bellman Works Here}
+
+Bellman backward induction sidesteps the BVP entirely:
+\begin{itemize}[leftmargin=1.5em]
+  \item Work \textbf{backwards from $T$}: the terminal condition
+        $V_N(0,0) = 0$ and $V_N(q^1,q^2) = +\infty$ for
+        $(q^1,q^2) \neq (0,0)$ is trivially known.
+  \item At each earlier step $k$, minimise over the \emph{finite} set of
+        feasible next states — no need to guess initial velocities.
+  \item The terminal constraint $q^1(T) = q^2(T) = 0$ is enforced
+        exactly by the boundary condition.
+\end{itemize}
+
+\subsection{Discrete Bellman Equation}
+
+Let $\Delta t = T/N$. At each time step $k \in \{0,\ldots,N-1\}$, the trader
+chooses $(n_1, n_2)$ — the number of shares of $S^1$ sold and the change in
+$S^2$ position — to minimise the sum of immediate cost and future cost-to-go:
+
+\begin{resultbox}[Two-asset Bellman equation]
+\[
+  V_k(q^1, q^2)
+  = \min_{\substack{0 \le n_1 \le q^1 \\ n_2 \in \mathbb{R}}}
+  \left[
+    \eta_1\!\left(\frac{n_1}{\Delta t}\right)^{\!2}\!\Delta t
+    + \eta_2\!\left(\frac{n_2}{\Delta t}\right)^{\!2}\!\Delta t
+    + \lambda\Bigl(\sigma_1^2 (q^1)^2 + \sigma_2^2 (q^2)^2
+                   + 2\rho\sigma_1\sigma_2\,q^1 q^2\Bigr)\Delta t
+    + V_{k+1}(q^1 - n_1,\; q^2 - n_2)
+  \right]
+\]
+with $V_N(0,0) = 0$ and $V_N(q^1,q^2) = +\infty$ for $(q^1,q^2)\neq(0,0)$.
+\end{resultbox}
+
+\paragraph{Term-by-term reading.}
+\begin{itemize}[leftmargin=1.5em]
+  \item $\eta_1(n_1/\Delta t)^2\Delta t$: liquidity cost of selling $n_1$ shares
+        of $S^1$ at velocity $n_1/\Delta t$.
+  \item $\eta_2(n_2/\Delta t)^2\Delta t$: liquidity cost of trading $n_2$ shares
+        of $S^2$.
+  \item $\lambda(\sigma_1^2(q^1)^2 + \sigma_2^2(q^2)^2 +
+        2\rho\sigma_1\sigma_2\,q^1 q^2)\Delta t$: instantaneous inventory risk,
+        including the cross term that enables hedging.
+  \item $V_{k+1}(q^1-n_1, q^2-n_2)$: future optimal cost-to-go.
+\end{itemize}
+
+\paragraph{Constraints on $n_2$.}
+The action $n_2$ is unrestricted in sign:
+\begin{itemize}[leftmargin=1.5em]
+  \item $n_2 > 0$: increasing a short position in $S^2$ (or reducing a long).
+  \item $n_2 < 0$: covering a short / going long $S^2$.
+\end{itemize}
+The optimal sign of $q^2_t$ is determined endogenously by the optimisation:
+\begin{itemize}[leftmargin=1.5em]
+  \item $\rho > 0 \Rightarrow$ optimal $q^2_t < 0$ (short hedge).
+  \item $\rho < 0 \Rightarrow$ optimal $q^2_t > 0$ (long hedge).
+  \item $\rho = 0 \Rightarrow$ optimal $q^2_t = 0$ (no hedge benefit).
+\end{itemize}
+
+\paragraph{Computational complexity.}
+The state space is $O(n_q^2)$ and actions are $O(n_q^2)$ per state,
+giving total cost $O(N \cdot n_q^4)$. Keep $n_q$ small (10--30) for
+tractability; a finer grid reduces discretisation artefacts (staircasing)
+at the cost of computation time.
+
+\begin{notebox}[Sanity check]
+  Setting $q^2 = 0$ and $\sigma_1=\sigma$, $\eta_1=\eta$ recovers exactly
+  the single-asset IS Bellman equation: the cross term vanishes, the $\eta_2$
+  term drops out, and $V_k(q^1) = \min_{0\le n\le q^1}[\eta(n/\Delta t)^2\Delta t
+  + \lambda\sigma^2(q^1)^2\Delta t + V_{k+1}(q^1-n)]$.
+\end{notebox}
+
+% -------------------------------------------------------------------
+\section{Question 2: Impact of the Hedge on the Optimal Strategy}
+\label{sec:impact}
+% -------------------------------------------------------------------
+
+We compare two strategies:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Single-asset IS}: the trader can only sell $S^1$,
+        using the optimal strategy from Section 1.
+  \item \textbf{Two-asset}: the trader can also trade $S^2$,
+        using the 2D Bellman above.
+\end{itemize}
+
+Both strategies liquidate $S^1$ from $Q$ to $0$ over $[0,T]$.
+The comparison focuses on two quantities:
+
+\paragraph{Portfolio variance.}
+Using formula \eqref{eq:variance} (with $q^2 \equiv 0$ for single-asset IS):
+\[
+  \Var_{\mathrm{single}} = \sigma_1^2\int_0^T (q^1_t)^2 \dd t,
+\]
+\[
+  \Var_{\mathrm{two}} = \sigma_1^2\int_0^T (q^1_t)^2 \dd t
+  + \sigma_2^2\int_0^T (q^2_t)^2 \dd t
+  + 2\rho\sigma_1\sigma_2\int_0^T q^1_t q^2_t \dd t.
+\]
+
+\paragraph{Liquidity cost.}
+\[
+  \mathrm{Cost}_{\mathrm{single}} = \eta_1\int_0^T (v^1_t)^2 \dd t,
+  \qquad
+  \mathrm{Cost}_{\mathrm{two}} = \eta_1\int_0^T (v^1_t)^2 \dd t
+  + \eta_2\int_0^T (v^2_t)^2 \dd t.
+\]
+
+\begin{resultbox}[Key findings]
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Variance reduction.}
+        The cross term $2\rho\sigma_1\sigma_2\int q^1 q^2\,\dd t$ is negative
+        in the optimal two-asset strategy (since $q^1 > 0$ and $\rho q^2 < 0$),
+        directly reducing $\Var_{\mathrm{two}}$ below $\Var_{\mathrm{single}}$.
+        With $\rho = 0.95$ and $\eta_2/\eta_1 = 0.05$, the numerical results
+        show a variance reduction of approximately $51\%$.
+
+  \item \textbf{Modest additional cost.}
+        Since $\eta_2 \ll \eta_1$, shorting $S^2$ is cheap.
+        $\mathrm{Cost}_{\mathrm{two}} \approx \mathrm{Cost}_{\mathrm{single}}$
+        in practice — the hedge pays for itself.
+
+  \item \textbf{Slower, quasi-linear liquidation of $S^1$.}
+        With the hedge absorbing inventory risk, the urgency to front-load
+        $S^1$ sales disappears. The optimal $q^1_t$ is quasi-linear
+        (close to TWAP) rather than the convex IS curve. This reflects the
+        \emph{decoupling} of risk management (delegated to $S^2$) from
+        liquidation (spread evenly over $[0,T]$).
+
+  \item \textbf{Symmetry in $\rho$.}
+        The speed of $S^1$ liquidation depends only on $|\rho|$, not its sign.
+        What changes with the sign of $\rho$ is only the \emph{direction}
+        of the $S^2$ position: short for $\rho > 0$, long for $\rho < 0$.
+\end{enumerate}
+\end{resultbox}
+
+\subsection{Economic Intuition for the $S^2$ Path}
+
+The optimal $q^2_t$ follows a characteristic arc:
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Early phase}: $q^1_t$ is large, so inventory risk is high.
+        The trader shorts $S^2$ aggressively to offset $S^1$ exposure via
+        the cross term. This is cheap since $\eta_2 \ll \eta_1$.
+  \item \textbf{Middle phase}: the marginal benefit of further hedging
+        (proportional to $q^1_t$) equals the marginal cost
+        (proportional to $\eta_2 v^2_t$). The short position stabilises.
+  \item \textbf{Late phase}: as $q^1_t \to 0$, the cross term $\propto q^1_t q^2_t$
+        vanishes, but holding a short in $S^2$ still costs $\sigma_2^2(q^2_t)^2\lambda$.
+        The trader covers the short to meet the constraint $q^2_T = 0$.
+\end{enumerate}
+
+The minimum of $q^2_t$ (deepest short) occurs when
+$\lambda\rho\sigma_1\sigma_2\,q^1_t = \eta_2\,v^2_t$:
+the marginal hedge benefit exactly equals the marginal liquidity cost.
+
+% -------------------------------------------------------------------
+\section{Summary}
+% -------------------------------------------------------------------
+
+\begin{resultbox}[Two-asset liquidation: key results]
+\begin{center}
+  \renewcommand{\arraystretch}{1.6}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Feature} & \textbf{Single-asset IS} & \textbf{Two-asset} \\
+    \midrule
+    $q^1_t$ shape & Convex (front-loaded) & Quasi-linear \\
+    $q^2_t$ & $0$ & Short ($\rho>0$) or Long ($\rho<0$) \\
+    Variance & $\sigma_1^2\int(q^1)^2\,\dd t$ & Reduced by cross term \\
+    Cost & $\eta_1\int(v^1)^2\,\dd t$ & $+\,\eta_2\int(v^2)^2\,\dd t$ (small) \\
+    Solution method & Closed form & Bellman on 2D grid \\
+    \bottomrule
+  \end{tabular}
+\end{center}
+
+\medskip
+The hedge is most effective when $|\rho|$ is large (assets move together)
+and $\eta_2 \ll \eta_1$ (trading $S^2$ is cheap).
+The sign of the optimal $q^2$ always satisfies
+$\operatorname{sign}(q^2_t) = -\operatorname{sign}(\rho)$.
+\end{resultbox}
+
+\end{document}
