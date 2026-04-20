@@ -7,6 +7,7 @@
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath, amsthm, amssymb}
 \usepackage{mathtools}          % \coloneqq, \prescript, dcases
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{array}
@@ -78,19 +79,25 @@
 \begin{document}
 \maketitle
 \thispagestyle{empty}
+\tableofcontents
+\newpage
 
 % -------------------------------------------------------------------
-\section{Model Setup}
+\section{Target Close and TWAP orders}
+\subsection{Present the continuous Almgren--Chriss model and find the optimal static strategy of IS, TC and TWAP orders in the mean--variance framework}
+\subsubsection{Model Setup}
 % -------------------------------------------------------------------
 
-We want to liquidate a block of $Q > 0$ shares over a fixed time horizon $[0,T]$.
-The key quantities are:
+We set up the continuous-time model so we can derive the optimal liquidation schedules.
+
+We liquidate a block of $Q > 0$ shares over a fixed horizon $[0,T]$.
+We use the following quantities:
 
 \begin{itemize}[leftmargin=1.5em]
   \item $q_t$: the number of shares still held (\emph{inventory}) at time $t$.
   \item $v_t = -\dot q_t$: the \emph{selling speed}, i.e.\ how many shares we sell per unit of time.
     A positive $v_t$ means we are selling.
-  \item Boundary conditions: $q_0 = Q$ (we start with everything) and $q_T = 0$ (we must finish flat). These two conditions together imply
+  \item Boundary conditions: $q_0 = Q$ (we start with everything) and $q_T = 0$ (we finish flat). These conditions imply
         \[
           \int_0^T v_t \dd t = Q.
         \]
@@ -122,25 +129,23 @@ Integrating over the whole horizon:
 \]
 
 \paragraph{Criterion.}
-We use a \emph{mean--variance} objective: for risk-aversion parameter $\lambda > 0$,
-we minimise
+We use a \emph{mean--variance} objective. For risk-aversion parameter $\lambda > 0$, we minimise
 \[
   J = -\E[\Pi] + \lambda\,\Var(\Pi),
 \]
 where $\Pi$ is the \emph{payoff} of the strategy relative to a chosen benchmark.
-We restrict to \emph{static} (deterministic) strategies: $q_t$ and $v_t$ are
-deterministic functions of time, so they are not adapted to the Brownian motion.
+We assume the selling schedule is fixed in advance and does not react to price moves.
+Therefore, $q_t$ and $v_t$ are deterministic functions of time.
 
 % -------------------------------------------------------------------
-\section{A Shared Tool: Integration by Parts on the Cash Flow}
+\subsubsection{A Shared Tool: Integration by Parts on the Cash Flow}
 \label{sec:ibp}
 % -------------------------------------------------------------------
 
-Before treating each benchmark separately, we derive a representation of $X_T$
-that will be used throughout.
+We rewrite the cash flow in a form that we use in all three benchmark problems.
 
 \paragraph{Expanding the cash flow.}
-Substituting $S_t = S_0 + \sigma W_t$:
+Plugging in $S_t = S_0 + \sigma W_t$ gives
 \begin{align}
   X_T
   &= \int_0^T S_t\,v_t \dd t - \eta\int_0^T v_t^2 \dd t \notag\\
@@ -148,18 +153,18 @@ Substituting $S_t = S_0 + \sigma W_t$:
      + \sigma\!\int_0^T W_t\,v_t \dd t
      - \eta\!\int_0^T v_t^2 \dd t.
 \end{align}
-Using the boundary condition $\int_0^T v_t \dd t = Q$, the first term simplifies to $S_0 Q$:
+Using $\int_0^T v_t \dd t = Q$, the first term becomes $S_0 Q$:
 \begin{equation}
   X_T = S_0 Q + \sigma\!\int_0^T W_t\,v_t \dd t - \eta\!\int_0^T v_t^2 \dd t.
   \label{eq:XT-raw}
 \end{equation}
 
 \paragraph{Stochastic integration by parts.}
-The stochastic integral $\int_0^T W_t \,v_t \dd t$ is an ordinary (Lebesgue) integral
-because $v_t$ is deterministic, but $W_t$ is random.
-We convert it into a stochastic integral (with respect to $W$)
-using integration by parts. Recall that $v_t = -\dot q_t$, so $v_t \dd t = -\dd q_t$.
-We integrate by parts with
+The term $\int_0^T W_t \,v_t \dd t$ is an ordinary integral because $v_t$ is deterministic.
+It is still random because it depends on $W_t$.
+We rewrite it as a stochastic integral using integration by parts.
+Since $v_t = -\dot q_t$, we have $v_t \dd t = -\dd q_t$.
+We use
 \[
   u = W_t, \quad \dd V = v_t \dd t = -\dd q_t:
 \]
@@ -172,80 +177,70 @@ Evaluating the boundary term: $W_0 = 0$ and $q_T = 0$, so
 \[
   \bigl[W_t\,q_t\bigr]_0^T = W_T\cdot 0 - 0\cdot Q = 0.
 \]
-Therefore:
 \begin{equation}
   \boxed{\int_0^T W_t\,v_t \dd t = \int_0^T q_t \dd W_t.}
   \label{eq:ibp}
 \end{equation}
 
-\begin{keybox}[Why this matters]
-  The left-hand side of \eqref{eq:ibp} mixes the deterministic function $v_t$
-  with the Brownian motion $W_t$ in a way that is hard to work with directly.
-  The right-hand side is a \emph{stochastic integral} driven by $\dd W_t$
-  with the \textbf{deterministic} integrand $q_t$.
-  For a deterministic integrand, It\^{o}'s isometry gives directly:
-  \[
-    \Var\!\left(\int_0^T q_t \dd W_t\right) = \int_0^T q_t^2 \dd t.
-  \]
-  This is the key that unlocks the variational formulation.
-\end{keybox}
-
 \paragraph{Canonical form of the cash flow.}
-Substituting \eqref{eq:ibp} into \eqref{eq:XT-raw}:
+Plugging \eqref{eq:ibp} into \eqref{eq:XT-raw} gives
 \begin{equation}
   X_T = S_0 Q - \eta\!\int_0^T v_t^2 \dd t + \sigma\!\int_0^T q_t \dd W_t.
   \label{eq:XT-canonical}
 \end{equation}
-This form holds \emph{for any admissible strategy} and will be our starting point
-in each of the three benchmark cases below.
+This form holds for any strategy.
+We use it in each benchmark case below.
 
 % -------------------------------------------------------------------
-\section{Implementation Shortfall (IS)}
+\subsubsection{Implementation Shortfall (IS)}
 \label{sec:IS}
 % -------------------------------------------------------------------
 
-\subsection{Benchmark and payoff}
+We solve the IS problem so we can identify the optimal schedule relative to the initial price.
 
-The \emph{implementation shortfall} benchmark is the initial price $S_0$:
-the ideal would be to sell all $Q$ shares instantly at $S_0$, receiving $QS_0$.
-The shortfall is the gap between this ideal and what we actually collect:
+\paragraph{Benchmark and payoff}
+
+The \emph{implementation shortfall} benchmark is the initial price $S_0$.
+The ideal outcome is to sell all $Q$ shares instantly at $S_0$ and receive $QS_0$.
+The shortfall is the gap between that ideal value and the cash we actually receive:
 \[
   \Pi_{\mathrm{IS}} = X_T - QS_0.
 \]
-Minimising the shortfall (in mean--variance sense) is equivalent to maximising the
-cash $X_T$, so we use the objective
+Minimising the shortfall in the mean--variance sense is equivalent to maximising the cash $X_T$.
+So we use the objective
 \[
   J_{\mathrm{IS}} = -\E[\Pi_{\mathrm{IS}}] + \lambda\,\Var(\Pi_{\mathrm{IS}}).
 \]
-Since $QS_0$ is a constant, it vanishes from both the mean and the variance:
+Since $QS_0$ is constant, it drops out of both the mean and the variance:
 $\E[\Pi_{\mathrm{IS}}] = \E[X_T] - QS_0$ and $\Var(\Pi_{\mathrm{IS}}) = \Var(X_T)$.
 
-\subsection{Mean of \texorpdfstring{$X_T$}{XT}}
+\paragraph{Mean of \texorpdfstring{$X_T$}{XT}}
 
-From the canonical form \eqref{eq:XT-canonical}, the only random term is
-$\sigma\int_0^T q_t \dd W_t$. Since $q_t$ is deterministic and
-$\E[\dd W_t] = 0$, the stochastic integral has zero expectation. Therefore:
+In \eqref{eq:XT-canonical}, the only random term is $\sigma\int_0^T q_t \dd W_t$.
+Since $q_t$ is deterministic, the stochastic integral has zero expectation.
+Therefore,
 \[
   \E[X_T] = S_0 Q - \eta\!\int_0^T v_t^2 \dd t.
 \]
-The term $-S_0 Q$ is a constant and can be dropped from the optimisation, leaving:
+We can drop the constant term $-S_0 Q$ from the optimisation.
+This leaves
 \[
   -\E[\Pi_{\mathrm{IS}}] = \eta\!\int_0^T v_t^2 \dd t = \eta\!\int_0^T \dot q_t^2 \dd t.
 \]
 
-\subsection{Variance of \texorpdfstring{$X_T$}{XT}}
+\paragraph{Variance of \texorpdfstring{$X_T$}{XT}}
 
-The deterministic terms in \eqref{eq:XT-canonical} do not contribute to variance.
-Applying It\^{o}'s isometry to the stochastic integral:
+Only the stochastic integral contributes to the variance.
+By It\^{o}'s isometry,
 \[
   \Var(X_T)
   = \sigma^2\,\Var\!\left(\int_0^T q_t \dd W_t\right)
   = \sigma^2\!\int_0^T q_t^2 \dd t.
 \]
 
-\subsection{Variational formulation}
+\paragraph{Optimisation problem}
 
-Combining mean and variance:
+Putting the mean and variance together gives
 \begin{equation}
   J_{\mathrm{IS}}[q]
   = \eta\!\int_0^T \dot q_t^2 \dd t + \lambda\sigma^2\!\int_0^T q_t^2 \dd t,
@@ -253,20 +248,20 @@ Combining mean and variance:
 \end{equation}
 subject to $q_0 = Q$, $q_T = 0$.
 
-\begin{notebox}[Reading the objective]
+\begin{notebox}[Remark: Reading the objective]
   The first term $\eta\int\dot q_t^2$ is the \emph{impact cost}: selling faster
   (larger $|\dot q_t|$) costs more. The second term $\lambda\sigma^2\int q_t^2$
   is the \emph{market risk}: holding more inventory (larger $|q_t|$) exposes us to
   more price uncertainty. The optimal schedule balances these two forces.
 \end{notebox}
 
-\subsection{Euler--Lagrange equation}
+\paragraph{Euler--Lagrange equation}
 
-The Lagrangian of \eqref{eq:JIS} is $\mathcal{L}(q, \dot q) = \eta\dot q^2 + \lambda\sigma^2 q^2$.
-The Euler--Lagrange equation
+The integrand in \eqref{eq:JIS} is $\mathcal{L}(q, \dot q) = \eta\dot q^2 + \lambda\sigma^2 q^2$.
+Applying the Euler--Lagrange equation
 $\frac{d}{dt}\!\left(\frac{\partial\mathcal{L}}{\partial\dot q}\right)
  - \frac{\partial\mathcal{L}}{\partial q} = 0$
-gives:
+gives
 \[
   \frac{d}{dt}(2\eta\dot q) - 2\lambda\sigma^2 q = 0
   \implies
@@ -274,25 +269,21 @@ gives:
   \qquad \kap^2 \coloneqq \frac{\lambda\sigma^2}{\eta}.
 \]
 
-\subsection{Solution}
+\paragraph{Solution}
 
-The general solution of $\ddot q - \kap^2 q = 0$ is:
+The general solution of $\ddot q - \kap^2 q = 0$ is
 \[
   q(t) = A\cosh(\kap t) + B\sinh(\kap t).
 \]
-Applying the boundary conditions:
-
-\textbf{At} $t = 0$: $q(0) = A = Q$, so $A = Q$.
-
-\textbf{At} $t = T$: $Q\cosh(\kap T) + B\sinh(\kap T) = 0$, so
+Using $q(0) = Q$ gives $A = Q$.
+Using $q(T) = 0$ gives
 $B = -Q\dfrac{\cosh(\kap T)}{\sinh(\kap T)} = -Q\coth(\kap T)$.
-
-Therefore $q(t) = Q\cosh(\kap t) - Q\coth(\kap T)\sinh(\kap t)$.
+$q(t)$ is therefore $Q\cosh(\kap t) - Q\coth(\kap T)\sinh(\kap t)$.
 Using the hyperbolic identity
 $\sinh(\kap(T-t)) = \sinh(\kap T)\cosh(\kap t) - \cosh(\kap T)\sinh(\kap t)$,
-we can rewrite this more compactly as:
+this gives the optimal IS schedule:
 
-\begin{resultbox}[IS optimal schedule]
+\begin{resultbox}[IS - optimal schedule]
 \[
   q_{\mathrm{IS}}(t) = Q\,\frac{\sinh\!\bigl(\kap(T-t)\bigr)}{\sinh(\kap T)},
   \qquad
@@ -304,28 +295,31 @@ selling: $q_t$ drops quickly then flattens. For small $\kap$, it is close to lin
 \end{resultbox}
 
 % -------------------------------------------------------------------
-\section{Target Close (TC)}
+\subsubsection{Target Close (TC)}
 \label{sec:TC}
 % -------------------------------------------------------------------
 
-\subsection{Benchmark and payoff}
+We solve the TC problem so we can identify the optimal schedule relative to the close.
 
-The \emph{target close} benchmark is the terminal price $S_T$: we measure our
-performance relative to the price at the end of the trading window. The payoff is:
+\paragraph{Benchmark and payoff}
+
+The \emph{target close} benchmark is the terminal price $S_T$.
+We measure performance relative to the price at the end of the trading window.
+The payoff is
 \[
   \Pi_{\mathrm{TC}} = X_T - QS_T.
 \]
 
-\subsection{Simplifying the payoff}
+\paragraph{Simplifying the payoff}
 
-Starting from the canonical form \eqref{eq:XT-canonical} and writing
-$S_T = S_0 + \sigma W_T$:
+We start from \eqref{eq:XT-canonical} and write $S_T = S_0 + \sigma W_T$:
 \begin{align*}
   \Pi_{\mathrm{TC}}
   &= S_0 Q - \eta\!\int_0^T v_t^2 \dd t + \sigma\!\int_0^T q_t \dd W_t
      - Q(S_0 + \sigma W_T).
 \end{align*}
-The $S_0 Q$ terms cancel. We express $W_T = \int_0^T \dd W_t$, so $QW_T = Q\int_0^T \dd W_t$:
+The $S_0 Q$ terms cancel.
+We write $W_T = \int_0^T \dd W_t$, so $QW_T = Q\int_0^T \dd W_t$:
 \begin{align}
   \Pi_{\mathrm{TC}}
   &= - \eta\!\int_0^T v_t^2 \dd t + \sigma\!\int_0^T q_t \dd W_t
@@ -334,15 +328,7 @@ The $S_0 Q$ terms cancel. We express $W_T = \int_0^T \dd W_t$, so $QW_T = Q\int_
   \label{eq:PiTC}
 \end{align}
 
-\begin{keybox}[Structure of $\Pi_{\mathrm{TC}}$]
-  Comparing \eqref{eq:PiTC} with the IS expression,
-  the only difference is that the stochastic integrand changes from $q_t$ to $q_t - Q$.
-  This reflects the change of benchmark: for TC we care about
-  how much $q_t$ deviates from $Q$ (i.e.\ how much we have \emph{already sold}),
-  whereas for IS we care about $q_t$ itself (how much we still \emph{hold}).
-\end{keybox}
-
-\subsection{Mean and variance}
+\paragraph{Mean and variance}
 
 \textbf{Mean.} The stochastic integral has zero expectation:
 \[
@@ -355,7 +341,7 @@ The $S_0 Q$ terms cancel. We express $W_T = \int_0^T \dd W_t$, so $QW_T = Q\int_
   = \sigma^2\!\int_0^T (q_t - Q)^2 \dd t.
 \]
 
-\subsection{Variational formulation}
+\paragraph{Optimisation problem}
 
 \begin{equation}
   J_{\mathrm{TC}}[q]
@@ -364,51 +350,40 @@ The $S_0 Q$ terms cancel. We express $W_T = \int_0^T \dd W_t$, so $QW_T = Q\int_
 \end{equation}
 subject to $q_0 = Q$, $q_T = 0$.
 
-\begin{notebox}[Reading the objective]
-  Compared to IS, the risk term now penalises the deviation of $q_t$ from $Q$
-  rather than from $0$. This makes sense: for a TC order, risk arises from
-  having \emph{sold too early}, because we are short relative to the benchmark $S_T$.
-  The optimal strategy therefore \emph{delays} selling compared to IS.
-\end{notebox}
+\paragraph{Euler--Lagrange equation}
 
-\subsection{Euler--Lagrange equation}
-
-The Lagrangian is $\mathcal{L}_{\mathrm{TC}}(q, \dot q) = \eta\dot q^2 + \lambda\sigma^2(q - Q)^2$.
-Computing the partial derivatives:
+The integrand in \eqref{eq:JTC} is $\mathcal{L}_{\mathrm{TC}}(q, \dot q) = \eta\dot q^2 + \lambda\sigma^2(q - Q)^2$.
+The partial derivatives are
 \[
   \frac{\partial\mathcal{L}_{\mathrm{TC}}}{\partial\dot q} = 2\eta\dot q,
   \qquad
   \frac{\partial\mathcal{L}_{\mathrm{TC}}}{\partial q} = 2\lambda\sigma^2(q - Q).
 \]
-The Euler--Lagrange equation gives:
+The Euler--Lagrange equation gives
 \[
   \ddot q - \kap^2(q - Q) = 0, \qquad \kap^2 = \frac{\lambda\sigma^2}{\eta}.
 \]
 
-\subsection{Change of variable}
+\paragraph{Change of variable}
 
-Define $y(t) = q(t) - Q$, which measures how far we are from a full position.
-Then $\ddot y = \ddot q$, and the ODE becomes:
+We write $y(t) = q(t) - Q$, where $y(t)$ is the gap from a full position.
+Then $\ddot y = \ddot q$, and the ODE becomes
 \[
   \ddot y - \kap^2 y = 0.
 \]
-The boundary conditions translate to:
+The boundary conditions become
 \[
   y(0) = q(0) - Q = Q - Q = 0, \qquad y(T) = q(T) - Q = 0 - Q = -Q.
 \]
 
-\subsection{Solution}
+\paragraph{Solution}
 
-General solution: $y(t) = A\cosh(\kap t) + B\sinh(\kap t)$.
+The general solution is $y(t) = A\cosh(\kap t) + B\sinh(\kap t)$.
+Using $y(0) = 0$ gives $A = 0$.
+Using $y(T) = -Q$ gives $B = -Q/\sinh(\kap T)$.
+With $y(t) = -Q\sinh(\kap t)/\sinh(\kap T)$, this gives the optimal TC schedule:
 
-\textbf{At} $t = 0$: $y(0) = A = 0$.
-
-\textbf{At} $t = T$: $B\sinh(\kap T) = -Q$, so $B = -Q/\sinh(\kap T)$.
-
-Therefore $y(t) = -Q\sinh(\kap t)/\sinh(\kap T)$,
-and recalling $q(t) = Q + y(t)$:
-
-\begin{resultbox}[TC optimal schedule]
+\begin{resultbox}[TC - optimal schedule]
 \[
   q_{\mathrm{TC}}(t) = Q\!\left(1 - \frac{\sinh(\kap t)}{\sinh(\kap T)}\right),
   \qquad
@@ -420,35 +395,35 @@ and accelerates toward the end --- the mirror image of IS.
 \end{resultbox}
 
 % -------------------------------------------------------------------
-\section{TWAP Benchmark}
+\subsubsection{TWAP Benchmark}
 \label{sec:TWAP}
 % -------------------------------------------------------------------
 
-\subsection{Benchmark and payoff}
+We solve the TWAP problem so we can identify the schedule that stays aligned with the benchmark path.
+
+\paragraph{Benchmark and payoff}
 
 The \emph{time-weighted average price} benchmark is the time-average of the mid-price:
 \[
   B_{\mathrm{TWAP}} = \frac{1}{T}\int_0^T S_t \dd t.
 \]
-The payoff is:
+The payoff is
 \[
   \Pi_{\mathrm{TWAP}} = X_T - Q \cdot B_{\mathrm{TWAP}}
   = X_T - \frac{Q}{T}\int_0^T S_t \dd t.
 \]
 
-\subsection{Handling the benchmark term}
+\paragraph{Handling the benchmark term}
 
-We need to simplify $\frac{Q}{T}\int_0^T S_t \dd t$.
-Substituting $S_t = S_0 + \sigma W_t$:
+We simplify $\frac{Q}{T}\int_0^T S_t \dd t$ by plugging in $S_t = S_0 + \sigma W_t$:
 \[
   \frac{Q}{T}\int_0^T S_t \dd t
   = \frac{Q}{T}\!\int_0^T S_0 \dd t + \frac{Q\sigma}{T}\!\int_0^T W_t \dd t
   = QS_0 + \frac{Q\sigma}{T}\!\int_0^T W_t \dd t.
 \]
 
-We now simplify the remaining integral $\int_0^T W_t \dd t$
-using integration by parts. Set $u = W_t$ and $\dd V = \dd t$,
-so that $\dd u = \dd W_t$ and $V = t$:
+We rewrite the remaining integral $\int_0^T W_t \dd t$ with integration by parts.
+We use $u = W_t$ and $\dd V = \dd t$, so $\dd u = \dd W_t$ and $V = t$:
 \begin{align}
   \int_0^T W_t \dd t
   &= \Bigl[t\, W_t\Bigr]_0^T - \int_0^T t\, \dd W_t
@@ -456,20 +431,20 @@ so that $\dd u = \dd W_t$ and $V = t$:
    \label{eq:ibp-twap}
 \end{align}
 Writing $W_T = \int_0^T \dd W_t$, the first term becomes
-$T W_T = T\int_0^T \dd W_t = \int_0^T T\,\dd W_t$,
-so the two terms combine into a single stochastic integral:
+$T W_T = T\int_0^T \dd W_t = \int_0^T T\,\dd W_t$.
+So the two terms combine into a single stochastic integral:
 \[
   \int_0^T W_t \dd t
   = \int_0^T (T - t)\,\dd W_t.
 \]
 
-Therefore:
+So the benchmark term becomes
 \[
   \frac{Q}{T}\int_0^T S_t \dd t
   = QS_0 + \frac{Q\sigma}{T}\int_0^T (T-t)\,\dd W_t.
 \]
 
-\begin{keybox}[The natural benchmark trajectory]
+\begin{keybox}[Key point: Natural benchmark path]
   Define the \emph{deterministic linear schedule}
   \[
     f(t) \coloneqq Q\,\frac{T-t}{T},
@@ -482,7 +457,7 @@ Therefore:
 \end{keybox}
 
 
-\subsection{Mean and variance}
+\paragraph{Mean and variance}
 
 \textbf{Mean.} The stochastic integral has zero expectation:
 \[
@@ -495,7 +470,7 @@ Therefore:
   = \sigma^2\!\int_0^T \!\left(q_t - Q\,\frac{T-t}{T}\right)^{\!2} \dd t.
 \]
 
-\subsection{Variational formulation}
+\paragraph{Optimisation problem}
 
 \begin{equation}
   J_{\mathrm{TWAP}}[q]
@@ -505,7 +480,7 @@ Therefore:
 \end{equation}
 subject to $q_0 = Q$, $q_T = 0$.
 
-\begin{notebox}[Comparison with IS and TC]
+\begin{notebox}[Remark: IS, TC, and TWAP]
 The three objectives have identical structure:
 \[
   J[q] = \eta\!\int_0^T\dot q_t^2\,\dd t + \lambda\sigma^2\!\int_0^T\bigl(q_t - f(t)\bigr)^2\dd t,
@@ -525,51 +500,48 @@ where the ``target path'' $f$ changes by benchmark:
 \end{center}
 \end{notebox}
 
-\subsection{Euler--Lagrange equation}
+\paragraph{Euler--Lagrange equation}
 
-The Lagrangian is $\mathcal{L}_{\mathrm{TWAP}}(q,\dot q, t) = \eta\dot q^2 + \lambda\sigma^2(q - f(t))^2$,
-where $f(t) = Q(T-t)/T$ is a \emph{known, deterministic} function of time.
-Computing the partial derivatives:
+The integrand in \eqref{eq:JTWAP} is $\mathcal{L}_{\mathrm{TWAP}}(q,\dot q, t) = \eta\dot q^2 + \lambda\sigma^2(q - f(t))^2$,
+where $f(t) = Q(T-t)/T$ is a known deterministic function of time.
+The partial derivatives are
 \[
   \frac{\partial\mathcal{L}_{\mathrm{TWAP}}}{\partial\dot q} = 2\eta\dot q,
   \qquad
   \frac{\partial\mathcal{L}_{\mathrm{TWAP}}}{\partial q} = 2\lambda\sigma^2(q - f(t)).
 \]
-The Euler--Lagrange equation gives:
+The Euler--Lagrange equation gives
 \[
   \ddot q - \kap^2\!\left(q - Q\,\frac{T-t}{T}\right) = 0, \qquad \kap^2 = \frac{\lambda\sigma^2}{\eta}.
 \]
 
-\subsection{Change of variable}
+\paragraph{Change of variable}
 
-Define the deviation from the linear schedule:
+We write
 \[
   y(t) \coloneqq q(t) - f(t) = q(t) - Q\,\frac{T-t}{T}.
 \]
+where $y(t)$ is the deviation from the linear schedule.
 Since $f$ is linear, its second derivative vanishes: $\ddot f(t) = 0$.
-Therefore $\ddot y = \ddot q$, and the ODE reduces to:
+So $\ddot y = \ddot q$, and the ODE becomes
 \[
   \ddot y - \kap^2 y = 0.
 \]
-Crucially, this is the same ODE as before — but the boundary conditions are now:
+This is the same ODE as before, but the boundary conditions are now:
 \[
   y(0) = q(0) - f(0) = Q - Q = 0, \qquad y(T) = q(T) - f(T) = 0 - 0 = 0.
 \]
-\emph{Both} boundary values are zero!
+Both boundary values are zero.
 
-\subsection{Solution}
+\paragraph{Solution}
 
-General solution: $y(t) = A\cosh(\kap t) + B\sinh(\kap t)$.
+The general solution is $y(t) = A\cosh(\kap t) + B\sinh(\kap t)$.
+Using $y(0) = 0$ gives $A = 0$.
+Using $y(T) = 0$ gives $B\sinh(\kap T) = 0$.
+Since $\kap > 0$, we have $\sinh(\kap T) > 0$, so $B = 0$.
+Since $y(t) = 0$ for all $t \in [0, T]$, this gives the optimal TWAP schedule:
 
-\textbf{At} $t = 0$: $y(0) = A = 0$.
-
-\textbf{At} $t = T$: $B\sinh(\kap T) = 0$.
-
-Since $\kap > 0$, we have $\sinh(\kap T) > 0$, which forces $B = 0$.
-
-Therefore $y(t) = 0$ for all $t \in [0, T]$, meaning $q(t) = f(t)$ exactly:
-
-\begin{resultbox}[TWAP optimal schedule --- exact result]
+\begin{resultbox}[TWAP - optimal schedule]
 \[
   q_{\mathrm{TWAP}}(t) = Q\!\left(1 - \frac{t}{T}\right),
   \qquad
@@ -580,22 +552,14 @@ for all $t$, for \textbf{any} value of $\lambda > 0$ and any $\kap$.
 This is an exact result, not an approximation.
 \end{resultbox}
 
-\paragraph{Why the result is exact.}
-The function $f(t) = Q(T-t)/T$ already satisfies both boundary conditions
-$f(0) = Q$ and $f(T) = 0$, so it is a \emph{feasible} trajectory.
-Since the objective \eqref{eq:JTWAP} is a sum of squares of $\dot q_t$ and
-$(q_t - f(t))$, it is minimised at zero when $q_t = f(t)$: the deviation
-$y(t) = 0$ simultaneously zeroes out the risk term.
-There is no trade-off to resolve — selling linearly at the TWAP rate
-is both the cheapest (in impact) and the safest (in risk) thing to do
-within the TWAP benchmark.
-
 % -------------------------------------------------------------------
-\section{Summary}
+\subsubsection{Summary and plots}
 \label{sec:summary}
 % -------------------------------------------------------------------
 
-\begin{resultbox}[Three optimal schedules]
+We collect the three schedules here so we can compare them directly:
+
+\begin{resultbox}[Summary - optimal schedules]
 All three strategies share the same Euler--Lagrange structure,
 $\ddot y - \kap^2 y = 0$ on the deviation $y(t) = q(t) - f(t)$,
 with $\kap^2 = \lambda\sigma^2/\eta$.
@@ -631,53 +595,24 @@ integration by parts and It\^{o}'s isometry, is:
 \]
 \end{resultbox}
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.78\linewidth]{\detokenize{Graphs/Optimal liquidation strategies.png}}
+  \caption{Closed-form optimal inventory trajectories for IS, TC, and TWAP under several values of risk aversion $\lambda$ and temporary impact $\eta$. IS becomes more front-loaded as risk aversion rises or trading becomes cheaper, TC becomes more back-loaded, and TWAP remains exactly linear.}
+  \label{fig:optimal-strategies-lambda-eta}
+\end{figure}
+
 % -------------------------------------------------------------------
-\section{Efficient Frontiers for IS and TC}
+\subsection{Plot the efficient frontiers}
 % -------------------------------------------------------------------
 
-\subsection{Implementation Shortfall}
+\subsubsection{Implementation Shortfall}
 
-\paragraph{Cost.}
-Recall the optimal IS trading speed:
-\[
-  v_{\mathrm{IS}}(t) = Q\,\frac{\kap\cosh\!\bigl(\kap(T-t)\bigr)}{\sinh(\kap T)}.
-\]
-We compute:
-\begin{align*}
-  \mathrm{Cost}_{\mathrm{IS}}
-  &= \eta\int_0^T v_{\mathrm{IS}}(t)^2\,\dd t
-   = \eta Q^2\,\frac{\kap^2}{\sinh^2(\kap T)}\int_0^T \cosh^2\!\bigl(\kap(T-t)\bigr)\,\dd t.
-\end{align*}
-Substituting $u = T - t$:
-\[
-  \int_0^T \cosh^2\!\bigl(\kap(T-t)\bigr)\,\dd t
-  = \int_0^T \cosh^2(\kap u)\,\dd u.
-\]
-Using the identity $\cosh^2(\kap u) = \dfrac{1 + \cosh(2\kap u)}{2}$:
-\[
-  \int_0^T \cosh^2(\kap u)\,\dd u
-  = \frac{T}{2} + \frac{1}{2}\int_0^T \cosh(2\kap u)\,\dd u
-  = \frac{T}{2} + \frac{\sinh(2\kap T)}{4\kap}.
-\]
-Using the identity $\sinh(2\kap T) = 2\sinh(\kap T)\cosh(\kap T)$:
-\[
-  \int_0^T \cosh^2(\kap u)\,\dd u
-  = \frac{T}{2} + \frac{\sinh(\kap T)\cosh(\kap T)}{2\kap}.
-\]
-Therefore:
-\begin{align*}
-  \mathrm{Cost}_{\mathrm{IS}}
-  &= \frac{\eta Q^2 \kap^2}{\sinh^2(\kap T)}
-     \left(\frac{T}{2} + \frac{\sinh(\kap T)\cosh(\kap T)}{2\kap}\right) \\
-  &= \frac{\eta Q^2 \kap^2}{2\sinh^2(\kap T)}
-     \left(T + \frac{\sinh(\kap T)\cosh(\kap T)}{\kap}\right) \\
-  &= \frac{\eta Q^2 \kap}{2}
-     \left(\frac{\kap T}{\sinh^2(\kap T)} + \frac{\cosh(\kap T)}{\sinh(\kap T)}\right) \\
-  &= \frac{\eta Q^2 \kap}{2}
-     \left(\frac{\kap T}{\sinh^2(\kap T)} + \coth(\kap T)\right).
-\end{align*}
+We compute the IS cost and risk so we can place the schedule on the efficient frontier.
 
-\begin{resultbox}[IS cost --- closed form]
+This gives the IS cost:
+
+\begin{resultbox}[IS - closed-form cost]
 \[
   \mathrm{Cost}_{\mathrm{IS}}
   = \frac{\eta Q^2 \kap}{2}
@@ -685,45 +620,9 @@ Therefore:
 \]
 \end{resultbox}
 
-\paragraph{Risk.}
-Recall the optimal IS inventory:
-\[
-  q_{\mathrm{IS}}(t) = Q\,\frac{\sinh\!\bigl(\kap(T-t)\bigr)}{\sinh(\kap T)}.
-\]
-We compute:
-\begin{align*}
-  \mathrm{Risk}_{\mathrm{IS}}
-  &= \sigma^2\int_0^T q_{\mathrm{IS}}(t)^2\,\dd t
-   = \sigma^2 Q^2\,\frac{1}{\sinh^2(\kap T)}\int_0^T \sinh^2\!\bigl(\kap(T-t)\bigr)\,\dd t.
-\end{align*}
-Substituting $u = T - t$:
-\[
-  \int_0^T \sinh^2\!\bigl(\kap(T-t)\bigr)\,\dd t
-  = \int_0^T \sinh^2(\kap u)\,\dd u.
-\]
-Using the identity $\sinh^2(\kap u) = \dfrac{\cosh(2\kap u) - 1}{2}$:
-\[
-  \int_0^T \sinh^2(\kap u)\,\dd u
-  = \frac{1}{2}\int_0^T \cosh(2\kap u)\,\dd u - \frac{T}{2}
-  = \frac{\sinh(2\kap T)}{4\kap} - \frac{T}{2}.
-\]
-Using $\sinh(2\kap T) = 2\sinh(\kap T)\cosh(\kap T)$:
-\[
-  \int_0^T \sinh^2(\kap u)\,\dd u
-  = \frac{\sinh(\kap T)\cosh(\kap T)}{2\kap} - \frac{T}{2}.
-\]
-Therefore:
-\begin{align*}
-  \mathrm{Risk}_{\mathrm{IS}}
-  &= \frac{\sigma^2 Q^2}{\sinh^2(\kap T)}
-     \left(\frac{\sinh(\kap T)\cosh(\kap T)}{2\kap} - \frac{T}{2}\right) \\
-  &= \frac{\sigma^2 Q^2}{2\kap}
-     \left(\frac{\cosh(\kap T)}{\sinh(\kap T)} - \frac{\kap T}{\sinh^2(\kap T)}\right) \\
-  &= \frac{\sigma^2 Q^2}{2\kap}
-     \left(\coth(\kap T) - \frac{\kap T}{\sinh^2(\kap T)}\right).
-\end{align*}
+This gives the IS risk:
 
-\begin{resultbox}[IS risk --- closed form]
+\begin{resultbox}[IS - closed-form risk]
 \[
   \mathrm{Risk}_{\mathrm{IS}}
   = \frac{\sigma^2 Q^2}{2\kap}
@@ -732,29 +631,30 @@ Therefore:
 \end{resultbox}
 
 % -------------------------------------------------------------------
-\subsection{Target Close}
+\subsubsection{Target Close}
 % -------------------------------------------------------------------
 
+We compute the TC cost and risk so we can compare its frontier with IS.
+
 \paragraph{Cost.}
-Recall the optimal TC trading speed:
+We start from the optimal TC trading speed:
 \[
   v_{\mathrm{TC}}(t) = Q\,\frac{\kap\cosh(\kap t)}{\sinh(\kap T)}.
 \]
-We compute:
+This gives
 \begin{align*}
   \mathrm{Cost}_{\mathrm{TC}}
   &= \eta\int_0^T v_{\mathrm{TC}}(t)^2\,\dd t
    = \eta Q^2\,\frac{\kap^2}{\sinh^2(\kap T)}\int_0^T \cosh^2(\kap t)\,\dd t.
 \end{align*}
-The integral $\int_0^T \cosh^2(\kap t)\,\dd t$ is identical to the one computed in the IS
-case (with $u = t$ instead of $u = T-t$):
+The integral $\int_0^T \cosh^2(\kap t)\,\dd t$ is the same one as in the IS case:
 \[
   \int_0^T \cosh^2(\kap t)\,\dd t
   = \frac{T}{2} + \frac{\sinh(\kap T)\cosh(\kap T)}{2\kap}.
 \]
-Therefore, the computation is word-for-word identical to the IS cost, giving:
+This gives the TC cost:
 
-\begin{resultbox}[TC cost --- closed form]
+\begin{resultbox}[TC - closed-form cost]
 \[
   \mathrm{Cost}_{\mathrm{TC}}
   = \frac{\eta Q^2 \kap}{2}
@@ -764,25 +664,25 @@ Therefore, the computation is word-for-word identical to the IS cost, giving:
 \end{resultbox}
 
 \paragraph{Risk.}
-For TC the risk integrand is $(q_t - Q)^2$. Recall:
+For TC, the risk term uses $(q_t - Q)^2$.
+We use
 \[
   q_{\mathrm{TC}}(t) - Q = -Q\,\frac{\sinh(\kap t)}{\sinh(\kap T)}.
 \]
-We compute:
+This gives
 \begin{align*}
   \mathrm{Risk}_{\mathrm{TC}}
   &= \sigma^2\int_0^T \bigl(q_{\mathrm{TC}}(t) - Q\bigr)^2\,\dd t
    = \sigma^2 Q^2\,\frac{1}{\sinh^2(\kap T)}\int_0^T \sinh^2(\kap t)\,\dd t.
 \end{align*}
-Again, the integral $\int_0^T \sinh^2(\kap t)\,\dd t$ is identical to the one computed
-in the IS case:
+The integral $\int_0^T \sinh^2(\kap t)\,\dd t$ is the same one as in the IS case:
 \[
   \int_0^T \sinh^2(\kap t)\,\dd t
   = \frac{\sinh(\kap T)\cosh(\kap T)}{2\kap} - \frac{T}{2}.
 \]
-Therefore:
+This gives the TC risk:
 
-\begin{resultbox}[TC risk --- closed form]
+\begin{resultbox}[TC - closed-form risk]
 \[
   \mathrm{Risk}_{\mathrm{TC}}
   = \frac{\sigma^2 Q^2}{2\kap}
@@ -792,23 +692,24 @@ Therefore:
 \end{resultbox}
 
 % -------------------------------------------------------------------
-\subsection{Why the Frontiers Coincide}
+\paragraph{Why the frontiers coincide.}
 % -------------------------------------------------------------------
 
 The equality of cost and risk for IS and TC is not a coincidence.
-The two schedules are related by a time-reversal:
+The two schedules are related by time reversal:
 \[
   q_{\mathrm{TC}}(t) = Q - q_{\mathrm{IS}}(T - t).
 \]
-Taking the derivative: $v_{\mathrm{TC}}(t) = v_{\mathrm{IS}}(T-t)$,
-so the cost integrands are related by $t \mapsto T - t$ and integrate to the same value.
-For the risk, note that
+Differentiating gives $v_{\mathrm{TC}}(t) = v_{\mathrm{IS}}(T-t)$.
+So the cost terms are the same after the change of variable $t \mapsto T - t$.
+For the risk,
 \[
   q_{\mathrm{TC}}(t) - Q = -q_{\mathrm{IS}}(T-t),
 \]
-so the risk integrands are also related by $t \mapsto T - t$ and again integrate identically.
+so the risk terms are also the same after the same time reversal.
+This gives the common efficient frontier:
 
-\begin{resultbox}[Identical efficient frontiers]
+\begin{resultbox}[IS and TC - identical efficient frontiers]
 The IS and TC efficient frontiers coincide exactly:
 \[
   \mathrm{Cost}^\star(\kap) = \frac{\eta Q^2 \kap}{2}
@@ -821,17 +722,23 @@ The IS and TC efficient frontiers coincide exactly:
 \]
 for all $\kap = \sqrt{\lambda\sigma^2/\eta} > 0$.
 \end{resultbox}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{\detokenize{Graphs/Efficient frontiers — IS vs TC vs TWAP.png}}
+  \caption{Efficient frontiers obtained by sweeping $\lambda$: moving along the frontier traces the cost-variance trade-off, while TWAP appears as a single benchmark-aligned point because its optimal schedule is independent of $\lambda$.}
+  \label{fig:efficient-frontiers}
+\end{figure}
+
 % -------------------------------------------------------------------
-\section{Expected Utility Formulation for TC and TWAP}
+\subsection{Bonus: find the optimal strategy in the expected utility framework}
 \label{sec:bonus-expected-utility}
 % -------------------------------------------------------------------
 
-This section answers the bonus question in the expected-utility framework for
-the \emph{Target Close} (TC) and \emph{TWAP} benchmarks only.
-We use the same model and notation as in the previous sections, and we avoid
-repeating the cash-flow and payoff derivations already established above.
+We solve the bonus question in the expected-utility framework for the \emph{Target Close} (TC) and \emph{TWAP} benchmarks only.
+We keep the same model and notation as above and do not repeat the cash-flow derivations.
 
-\begin{keybox}[State-variable caution]
+\begin{keybox}[Key point: State variables]
   The two HJB problems do not have the same primitive state variables:
   \begin{itemize}[leftmargin=1.5em]
     \item for TC, the state is $(t,x,s,q)$ because the benchmark depends on the
@@ -846,30 +753,40 @@ repeating the cash-flow and payoff derivations already established above.
   \end{itemize}
 \end{keybox}
 
-\subsection{Expected utility criterion}
+\subsubsection{Expected utility criterion}
+
+We replace the mean--variance criterion with CARA utility so we can compare the two frameworks.
 
 We replace the mean--variance objective by CARA utility:
 \[
   U(x) = -e^{-\gamma x},
   \qquad \gamma > 0.
 \]
-For a benchmark-dependent payoff $\Pi_B$, the optimization problem is
+For a benchmark-dependent payoff $\Pi_B$, the optimisation problem is
 \[
   \max_q \E[-e^{-\gamma \Pi_B}],
   \qquad
   B \in \{\mathrm{TC}, \mathrm{TWAP}\}.
 \]
+For IS, we do not need a separate HJB derivation.
+Under a deterministic strategy, $\Pi_{\mathrm{IS}} = X_T - QS_0$ is Gaussian and has the same mean--variance structure as above.
+The CARA--Gaussian identity therefore reduces the expected-utility problem to the same deterministic objective after the identification
+$\lambda = \gamma/2$, so the optimal schedule is again
+$q_{\mathrm{IS}}^*(t)=Q\,\sinh\!\bigl(\kap(T-t)\bigr)/\sinh(\kap T)$ with
+$\kap = \sqrt{\gamma\sigma^2/(2\eta)}$.
 
 % -------------------------------------------------------------------
-\subsection{Target Close (TC)}
+\subsubsection{Target Close (TC)}
 % -------------------------------------------------------------------
+
+We solve the TC expected-utility problem so we can recover the optimal schedule from the HJB.
 
 \paragraph{Value function and HJB.}
 For the TC benchmark, the payoff is
 \[
   \Pi_{\mathrm{TC}} = X_T - QS_T.
 \]
-The value function is therefore
+The value function is
 \begin{equation}
   V^{\mathrm{TC}}(t,x,s,q)
   =
@@ -877,7 +794,7 @@ The value function is therefore
   \E_{t,x,s,q}\!\left[-e^{-\gamma(X_T - QS_T)}\right].
   \label{eq:V-TC-bonus}
 \end{equation}
-Using the dynamics already introduced in the report,
+Using the model dynamics,
 \[
   \dd X_t = v_t(S_t-\eta v_t)\dd t,
   \qquad
@@ -905,7 +822,7 @@ Since $q_T = 0$, the terminal payoff can be rewritten as
 \[
   X_T - QS_T = X_T + (q_T - Q)S_T.
 \]
-This suggests the ansatz
+This motivates the ansatz
 \begin{equation}
   V^{\mathrm{TC}}(t,x,s,q)
   =
@@ -971,7 +888,7 @@ The first-order condition is
   \qquad
   v_{\mathrm{TC}}^*(t,q) = \frac{\phi_q^{\mathrm{TC}}(t,q)}{2\eta}.
 \]
-Hence the reduced HJB can be written as
+So the reduced HJB can be written as
 \begin{equation}
   \phi_t^{\mathrm{TC}}
   +
@@ -982,70 +899,10 @@ Hence the reduced HJB can be written as
   = 0.
   \label{eq:TC-running-cost-bonus}
 \end{equation}
-So the induced running cost is
+So the cost at each instant is
 \[
   \eta v_t^2 + \frac{\gamma\sigma^2}{2}(q_t-Q)^2.
 \]
-More precisely, the reduced HJB is now in the standard deterministic form
-\[
-  \phi_t + \inf_v\{L(q_t,v_t) + b(q_t,v_t)\phi_q\} = 0,
-\]
-with state dynamics
-\[
-  \dot q_t = b(q_t,v_t) = -v_t
-\]
-and running cost
-\[
-  L(q_t,v_t)
-  =
-  \eta v_t^2 + \frac{\gamma\sigma^2}{2}(q_t-Q)^2.
-\]
-Hence the associated deterministic control problem is to minimize
-\[
-  \int_0^T L(q_t,v_t)\dd t
-\]
-subject to $\dot q_t=-v_t$. Replacing $v_t$ by $-\dot q_t$ gives an objective
-written entirely in terms of the inventory path $q$.
-
-\paragraph{Equivalent deterministic objective.}
-From the payoff representation derived earlier in the report,
-\[
-  \Pi_{\mathrm{TC}}
-  =
-  -\eta\!\int_0^T v_t^2 \dd t
-  +
-  \sigma\!\int_0^T (q_t-Q)\dd W_t.
-\]
-Because the strategy is deterministic, $\Pi_{\mathrm{TC}}$ is Gaussian with
-\[
-  \E[\Pi_{\mathrm{TC}}]
-  =
-  -\eta\!\int_0^T v_t^2 \dd t,
-  \qquad
-  \Var(\Pi_{\mathrm{TC}})
-  =
-  \sigma^2\!\int_0^T (q_t-Q)^2 \dd t.
-\]
-Since $\Pi_{\mathrm{TC}}$ is Gaussian and the utility is CARA,
-\[
-  \E[-e^{-\gamma \Pi_{\mathrm{TC}}}]
-  =
-  -\exp\!\left(
-    -\gamma \E[\Pi_{\mathrm{TC}}]
-    +
-    \frac{\gamma^2}{2}\Var(\Pi_{\mathrm{TC}})
-  \right).
-\]
-Because the exponential function is monotone, maximizing expected utility is
-equivalent to maximizing
-\[
-  \E[\Pi_{\mathrm{TC}}] - \frac{\gamma}{2}\Var(\Pi_{\mathrm{TC}}),
-\]
-or equivalently minimizing
-\[
-  -\E[\Pi_{\mathrm{TC}}] + \frac{\gamma}{2}\Var(\Pi_{\mathrm{TC}}).
-\]
-Therefore maximizing expected utility is equivalent to minimizing
 \begin{equation}
   J_{\mathrm{TC}}^{\mathrm{EU}}[q]
   =
@@ -1054,6 +911,8 @@ Therefore maximizing expected utility is equivalent to minimizing
   \frac{\gamma\sigma^2}{2}\!\int_0^T (q_t-Q)^2 \dd t.
   \label{eq:J-TC-bonus}
 \end{equation}
+Since the strategy is deterministic, $\Pi_{\mathrm{TC}}$ is Gaussian.
+The CARA--Gaussian identity then maps the expected-utility problem to the mean--variance objective above with $\lambda = \gamma/2$.
 
 \paragraph{Optimal TC strategy.}
 The Euler--Lagrange equation associated with \eqref{eq:J-TC-bonus} is
@@ -1067,7 +926,8 @@ that is,
   \kap^2 = \frac{\gamma\sigma^2}{2\eta}.
   \label{eq:EL-TC-bonus}
 \end{equation}
-Let $y_t \coloneqq q_t-Q$. Then
+We write $y_t \coloneqq q_t-Q$, where $y_t$ is the gap from a full position.
+Then
 \[
   \ddot y_t = \kap^2 y_t,
   \qquad
@@ -1079,11 +939,12 @@ The general solution is
 \[
   y_t = A\sinh(\kap t) + B\cosh(\kap t).
 \]
-Since $y_0 = 0$, we get $B=0$. Since $y_T = -Q$, we get
+Using $y_0 = 0$ gives $B=0$.
+Using $y_T = -Q$ gives
 \[
   A = -\frac{Q}{\sinh(\kap T)}.
 \]
-Therefore
+So
 \[
   y_t = -Q\frac{\sinh(\kap t)}{\sinh(\kap T)},
 \]
@@ -1098,8 +959,10 @@ and the optimal TC inventory is
 \end{equation}
 
 % -------------------------------------------------------------------
-\subsection{TWAP}
+\subsubsection{TWAP}
 % -------------------------------------------------------------------
+
+We solve the TWAP expected-utility problem so we can check whether the linear schedule remains optimal.
 
 \paragraph{Value function and HJB.}
 For TWAP, the benchmark is the running time average
@@ -1147,7 +1010,7 @@ To match the terminal payoff $X_T-QA_T$, we use
   \right).
   \label{eq:ansatz-TWAP-bonus}
 \end{equation}
-At time $T$, the coefficient of $s$ vanishes, so this indeed becomes
+At time $T$, the coefficient of $s$ vanishes, so this becomes
 $x-Qa$.
 
 From \eqref{eq:ansatz-TWAP-bonus}, the derivatives are
@@ -1206,49 +1069,13 @@ Equivalently,
   = 0.
   \label{eq:TWAP-running-cost-bonus}
 \end{equation}
-So the induced running cost is
+So the cost at each instant is
 \[
   \eta v_t^2
   +
   \frac{\gamma\sigma^2}{2}
   \left(q_t-Q\frac{T-t}{T}\right)^2.
 \]
-Again, this is a deterministic HJB of the form
-\[
-  \phi_t + \inf_v\{L(q_t,v_t) + b(q_t,v_t)\phi_q\} = 0,
-\]
-with
-\[
-  \dot q_t = b(q_t,v_t) = -v_t
-\]
-and
-\[
-  L(q_t,v_t)
-  =
-  \eta v_t^2
-  +
-  \frac{\gamma\sigma^2}{2}
-  \left(q_t-Q\frac{T-t}{T}\right)^2.
-\]
-Therefore the associated deterministic control problem is to minimize
-\[
-  \int_0^T L(q_t,v_t)\dd t
-\]
-subject to $\dot q_t=-v_t$. Replacing $v_t$ by $-\dot q_t$ gives the
-deterministic objective below.
-
-\paragraph{Equivalent deterministic objective.}
-From the payoff representation already obtained in the report,
-\[
-  \Pi_{\mathrm{TWAP}}
-  =
-  -\eta\!\int_0^T v_t^2 \dd t
-  +
-  \sigma\!\int_0^T
-  \left(q_t-Q\frac{T-t}{T}\right)\dd W_t.
-\]
-Since the strategy is deterministic, $\Pi_{\mathrm{TWAP}}$ is Gaussian and
-maximizing expected utility is equivalent to minimizing
 \begin{equation}
   J_{\mathrm{TWAP}}^{\mathrm{EU}}[q]
   =
@@ -1258,6 +1085,8 @@ maximizing expected utility is equivalent to minimizing
   \left(q_t-Q\frac{T-t}{T}\right)^2 \dd t.
   \label{eq:J-TWAP-bonus}
 \end{equation}
+Since the strategy is deterministic, $\Pi_{\mathrm{TWAP}}$ is Gaussian.
+The CARA--Gaussian identity then maps the expected-utility problem to the mean--variance objective above with $\lambda = \gamma/2$.
 
 \paragraph{Optimal TWAP strategy.}
 The Euler--Lagrange equation associated with \eqref{eq:J-TWAP-bonus} is
@@ -1267,10 +1096,11 @@ The Euler--Lagrange equation associated with \eqref{eq:J-TWAP-bonus} is
   \kap^2\left(q_t-Q\frac{T-t}{T}\right).
   \label{eq:EL-TWAP-bonus}
 \end{equation}
-Define the deviation from the TWAP benchmark path by
+We write
 \[
   y_t \coloneqq q_t-Q\frac{T-t}{T}.
 \]
+where $y_t$ is the deviation from the TWAP benchmark path.
 Since $Q(T-t)/T$ is linear in $t$, its second derivative is zero, so
 \[
   \ddot y_t = \kap^2 y_t.
@@ -1285,7 +1115,7 @@ The only solution is therefore
 \[
   y_t \equiv 0.
 \]
-Hence the optimal TWAP inventory is exactly
+So the optimal TWAP inventory is
 \begin{equation}
   \boxed{
     q_{\mathrm{TWAP}}^*(t)
@@ -1295,32 +1125,21 @@ Hence the optimal TWAP inventory is exactly
   \label{eq:qstar-TWAP-bonus}
 \end{equation}
 
-\subsection{Final comparison with the mean--variance framework}
+\paragraph{Comparison with the mean--variance framework.}
 
-For both benchmarks, the expected-utility problem reduces to the deterministic
-quadratic objective
-\[
-  J_B^{\mathrm{EU}}[q]
-  =
-  \eta\!\int_0^T \dot q_t^2 \dd t
-  +
-  \frac{\gamma\sigma^2}{2}\!\int_0^T (q_t-f_B(t))^2 \dd t,
-\]
-with
-\[
-  f_{\mathrm{TC}}(t)=Q,
-  \qquad
-  f_{\mathrm{TWAP}}(t)=Q\frac{T-t}{T}.
-\]
-Comparing with the mean--variance objective derived earlier in the report shows
-that the two frameworks coincide after the identification
-\[
-  \boxed{\lambda = \frac{\gamma}{2}}.
-\]
+This gives the final expected-utility result:
 
-\begin{resultbox}[Final answer]
-  In the expected-utility framework, the optimal strategies are
+\begin{resultbox}[Expected utility - final answer]
+  The expected-utility and mean--variance formulations coincide under
   \[
+    \boxed{\lambda = \frac{\gamma}{2}}.
+  \]
+  The optimal strategies are
+  \[
+    q_{\mathrm{IS}}^*(t)
+    =
+    Q\,\frac{\sinh\!\bigl(\kap(T-t)\bigr)}{\sinh(\kap T)},
+    \qquad
     q_{\mathrm{TC}}^*(t)
     =
     Q\left(1-\frac{\sinh(\kap t)}{\sinh(\kap T)}\right),
@@ -1333,7 +1152,120 @@ that the two frameworks coincide after the identification
   \[
     \kap = \sqrt{\frac{\gamma\sigma^2}{2\eta}}.
   \]
-  The primitive HJB state is $(t,x,s,q)$ for TC and $(t,x,s,a,q)$ for TWAP.
 \end{resultbox}
+
+% -------------------------------------------------------------------
+\subsection{Bellman Equation on a Discretized Grid}
+% -------------------------------------------------------------------
+
+We also solve the IS and TC problems by dynamic programming on a discrete state space so we can compare them with the continuous-time formulas.
+We split the horizon $[0,T]$ into $N$ intervals of length $\Delta t = T/N$, and we restrict the inventory to the grid
+\[
+  q_i = i\,\Delta q,
+  \qquad
+  \Delta q = \frac{Q}{n_q},
+  \qquad
+  i = 0,1,\dots,n_q.
+\]
+At each time step $k$ and current inventory $q_i$, the control is the number of shares sold over $[t_k,t_{k+1}]$.
+Equivalently, we choose the next inventory level $q_j \le q_i$, so the trade size is $n_k = q_i-q_j$ and the selling rate is approximated by $v_k = (q_i-q_j)/\Delta t$.
+
+We define the value function $V_k(q_i)$ as the minimal remaining cost from time $t_k$ onward when the current inventory is $q_i$.
+In both benchmarks, we enforce the terminal liquidation constraint exactly through
+\[
+  V_N(0)=0,
+  \qquad
+  V_N(q_i)=+\infty \quad \text{for } q_i>0,
+\]
+which forces the strategy to end with zero inventory.
+We then run a standard backward induction.
+At each node $(t_k,q_i)$, we test all feasible next inventories $q_j \le q_i$, store the minimiser, and recover the optimal inventory path with a forward pass from $q_0 = Q$.
+
+\subsubsection{Implementation Shortfall}
+
+We write the discrete IS recursion so we can compare it with the closed-form solution.
+
+For the implementation shortfall benchmark, the discrete Bellman equation is
+\begin{equation}
+  V_k^{\mathrm{IS}}(q_i)
+  =
+  \min_{0 \le j \le i}
+  \left\{
+    \eta\left(\frac{q_i-q_j}{\Delta t}\right)^2 \Delta t
+    +
+    \lambda\sigma^2 q_i^2 \Delta t
+    +
+    V_{k+1}^{\mathrm{IS}}(q_j)
+  \right\}.
+  \label{eq:bellman-is-discrete}
+\end{equation}
+The first term is the temporary impact cost over the current interval.
+The second term is the discrete version of the IS risk penalty $\lambda\sigma^2\int_0^T q_t^2\,\dd t$.
+We compare this numerical solution with the closed-form inventory path from Question~1.1,
+\[
+  q_{\mathrm{IS}}^*(t)
+  =
+  Q\,\frac{\sinh\!\bigl(\kap(T-t)\bigr)}{\sinh(\kap T)},
+  \qquad
+  \kap = \sqrt{\frac{\lambda\sigma^2}{\eta}}.
+\]
+
+In the notebook, we use $Q=1$, $T=1$, $\sigma=0.5$, $\eta=0.01$, $\lambda=1$, and three grid resolutions: $(N,n_q)=(5,10)$, $(10,20)$, and $(60,120)$.
+Figure~\ref{fig:bellman-is} shows that the coarsest grids produce a visibly quantized inventory path, while the refined grid is almost indistinguishable from the analytical schedule.
+This is the expected convergence pattern.
+As $\Delta t \to 0$ and $\Delta q \to 0$, the discrete control set becomes dense in the continuous one and the Bellman solution recovers the front-loaded IS rule.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{\detokenize{Graphs/IS — Bellman vs analytical'.png}}
+  \caption{Implementation Shortfall inventory paths. The Bellman solution is plotted for increasingly fine time and inventory grids and compared with the closed-form Almgren--Chriss schedule. Grid refinement makes the discrete trajectory converge to the analytical IS solution.}
+  \label{fig:bellman-is}
+\end{figure}
+
+\subsubsection{Target Close}
+
+We write the discrete TC recursion so we can compare it with the closed-form solution.
+
+For the target close benchmark, the Bellman recursion has the same structure, but the variance penalty is centred around the initial inventory $Q$ rather than around $0$:
+\begin{equation}
+  V_k^{\mathrm{TC}}(q_i)
+  =
+  \min_{0 \le j \le i}
+  \left\{
+    \eta\left(\frac{q_i-q_j}{\Delta t}\right)^2 \Delta t
+    +
+    \lambda\sigma^2 (q_i-Q)^2 \Delta t
+    +
+    V_{k+1}^{\mathrm{TC}}(q_j)
+  \right\}.
+  \label{eq:bellman-tc-discrete}
+\end{equation}
+This is the discrete version of the TC mean--variance criterion derived earlier.
+We compare it with the continuous-time optimum
+\[
+  q_{\mathrm{TC}}^*(t)
+  =
+  Q\left(1-\frac{\sinh(\kap t)}{\sinh(\kap T)}\right),
+  \qquad
+  \kap = \sqrt{\frac{\lambda\sigma^2}{\eta}}.
+\]
+
+We use the same sequence of grids in the numerical experiment.
+Figure~\ref{fig:bellman-tc} again shows that coarse discretizations produce a staircase approximation, while the fine grid closely tracks the theoretical TC inventory path.
+The qualitative difference with IS remains clear: the TC strategy is back-loaded, with little trading at the beginning and rapid liquidation near the close.
+The near overlap between the fine-grid Bellman curve and the analytical one confirms that the discretized dynamic-programming scheme is consistent with the continuous-time solution.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{\detokenize{Graphs/TC — Bellman vs analytical.png}}
+  \caption{Target Close inventory paths. The discrete Bellman solutions obtained on finer grids progressively approach the closed-form TC schedule, confirming convergence of the numerical approximation.}
+  \label{fig:bellman-tc}
+\end{figure}
+
+\paragraph{Convergence to the theoretical solution.}
+For both IS and TC, the convergence is clear from the inventory paths.
+On coarse grids, there are only a few possible trades, so the optimal path is necessarily quantized.
+As we refine the discretization, the Bellman recursion has access to a richer set of feasible controls and the discrete optimum converges to the hyperbolic-sine solutions from Question~1.1.
+In particular, on the finest grid used in the notebook, the Bellman and analytical curves are nearly indistinguishable in both benchmarks.
 
 \end{document}
