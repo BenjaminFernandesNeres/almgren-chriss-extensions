@@ -1,5 +1,36 @@
+# Operating-system files
 .DS_Store
-.ipynb_checkpoints/
-src/__pycache__/
+Thumbs.db
+
+# Python cache files
 __pycache__/
-*.pyc
+src/__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+executed_main.ipynb
+
+# Local report artifacts submitted separately
+*.pdf
+*.tex
+figures/
+
+# LaTeX build by-products
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc

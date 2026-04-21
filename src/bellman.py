@@ -1,6 +1,10 @@
 """
 Bellman backward induction on a discrete grid.
 
+Objective:
+    Numerical dynamic-programming solver for the discrete version of the
+    Almgren-Chriss liquidation problem.
+
 We discretise the liquidation problem in time (N steps) and inventory (n_q levels).
 At each node (time step k, inventory q), the Bellman equation gives the optimal
 number of shares to sell in order to minimise the remaining cost-to-go.
@@ -11,6 +15,9 @@ up to terminal step N where all inventory must be liquidated (q = 0).
 This is the discrete-time analogue of the continuous mean-variance problem solved
 analytically in almgren_chriss.py.  When the grid is fine enough, the two solutions
 should match — which we verify in the notebook (Section 1, Question 4).
+
+Authors: Benjamin Fernandes Neres, Dorian Deilhes, Ben Komara
+Date: April 2026
 """
 
 import numpy as np
